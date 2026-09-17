@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local development.
+SEARCH1API_API_KEY=
+TYPESAFE_API_KEY=

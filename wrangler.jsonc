@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "last24hours",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-07-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SEARCH1API_BASE_URL": "https://api.search1api.com",
+    "TYPESAFE_MODEL": "jev-latest"
+  },
+  // Secrets: `wrangler secret put <NAME>` in production, `.dev.vars` locally.
+  //   SEARCH1API_API_KEY  https://www.search1api.com
+  //   TYPESAFE_API_KEY    https://typesafe.ai
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "SEARCH_RATE_LIMIT",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 30, "period": 60 }
+      }
+    ]
+  },
+  "analytics_engine_datasets": [
+    { "binding": "FEEDBACK", "dataset": "last24hours_feedback" }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true }
+  }
+}
