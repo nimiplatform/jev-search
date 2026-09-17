@@ -47,9 +47,8 @@ function ResultRow({
   return (
     <article className={cn('group', minor ? 'pl-4 border-l' : '')}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
-          <SourceIcon className="size-3" id={item.source} />
-          {sourceById(item.source).label}
+        <span className="inline-flex items-center" title={sourceById(item.source).label}>
+          <SourceIcon className="size-3.5" id={item.source} />
         </span>
         <span className="truncate">{displayUrl(item.url)}</span>
         {age && <span>· {age}</span>}
