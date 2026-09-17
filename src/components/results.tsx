@@ -1,6 +1,5 @@
 import { ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { Cluster, RankedItem, Weights } from '@/lib/rank';
 import { compositeScore } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
@@ -118,12 +117,15 @@ export function Results({
   clusters,
   request,
   weights,
+  streaming,
 }: {
   clusters: Cluster[];
   request: string;
   weights: Weights;
+  streaming: boolean;
 }) {
   if (clusters.length === 0) {
+    if (streaming) return null;
     return (
       <p className="mt-8 text-muted-foreground">
         Nothing in this window. Try a wider one, or fewer sources.
@@ -134,7 +136,7 @@ export function Results({
   return (
     <ol className="mt-6 flex flex-col gap-6">
       {clusters.map((cluster) => (
-        <li className="flex flex-col gap-2" key={cluster.lead.id}>
+        <li className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300" key={cluster.lead.id}>
           <ResultRow item={cluster.lead} rank={++rank} request={request} weights={weights} />
           {cluster.others.map((item) => (
             <ResultRow item={item} key={item.id} minor rank={++rank} request={request} weights={weights} />
@@ -145,16 +147,4 @@ export function Results({
   );
 }
 
-export function ResultsSkeleton() {
-  return (
-    <div className="mt-6 flex flex-col gap-6">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div className="flex flex-col gap-2" key={i}>
-          <Skeleton className="h-3 w-48" />
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
+

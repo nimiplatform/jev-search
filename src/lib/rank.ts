@@ -122,9 +122,18 @@ export function canonicalUrl(url: string): string {
  * not occupy five slots. Ordering is by the lead's composite score.
  */
 export function clusterItems(items: RankedItem[], weights: Weights): Cluster[] {
-  const scored = items
-    .map((item) => ({ item, score: compositeScore(item, weights) }))
-    .sort((a, b) => b.score - a.score);
+  const sorted = [...items].sort(
+    (a, b) => compositeScore(b, weights) - compositeScore(a, weights)
+  );
+  return clusterInOrder(sorted, weights);
+}
+
+/**
+ * Same grouping, but the lead order is the order given. Used while results
+ * stream in so rows the reader has already seen do not move.
+ */
+export function clusterInOrder(items: RankedItem[], weights: Weights): Cluster[] {
+  const scored = items.map((item) => ({ item, score: compositeScore(item, weights) }));
 
   const byUrl = new Map<string, Cluster>();
   const byTitle = new Map<string, Cluster>();
