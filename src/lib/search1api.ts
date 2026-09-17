@@ -47,8 +47,8 @@ export class Search1ApiError extends Error {
  * `include_sites` / `exclude_sites`; vertical engines are picked with
  * `service`. Recency is `time_range` in both cases.
  */
-/** One slow engine must not hold up the others; the stream shows what arrived. */
-export const LANE_TIMEOUT_MS = 6_000;
+/** Allow filtered searches to finish while other lanes stream independently. */
+export const LANE_TIMEOUT_MS = 15_000;
 
 export async function search(
   config: Search1ApiConfig,

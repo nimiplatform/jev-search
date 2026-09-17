@@ -112,21 +112,22 @@ export function Working({ state }: { state: AskState }) {
   return (
     <section className="mt-4 text-sm">
       <button
-        className="group flex w-full items-center gap-2 text-left text-muted-foreground hover:text-foreground"
+        className="group grid w-full grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-start gap-2 text-left text-muted-foreground hover:text-foreground"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         type="button"
       >
         {state.phase === 'done' ? (
-          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
             <CheckIcon className="size-2.5" strokeWidth={3} />
           </span>
         ) : (
-          <LoaderCircleIcon className="size-4 shrink-0 animate-spin text-primary" />
+          <LoaderCircleIcon className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
         )}
-        <span>{summary}</span>
+        <span className="min-w-0 wrap-anywhere">{summary}</span>
         <ChevronDownIcon
           className={cn(
-            'ml-1 size-3.5 shrink-0 opacity-40 transition-transform duration-200 group-hover:opacity-80',
+            'mt-[3px] size-3.5 shrink-0 opacity-40 transition-transform duration-200 group-hover:opacity-80',
             open && 'rotate-180'
           )}
         />

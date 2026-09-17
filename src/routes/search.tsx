@@ -31,7 +31,7 @@ export const Route = createFileRoute('/search')({
     return out;
   },
   head: ({ match }) => ({
-    meta: [{ title: match.search.q ? `${match.search.q} · s1 ask` : 's1 ask — Jev for Search' }],
+    meta: [{ title: match.search.q ? `${match.search.q} · Jev Search` : 'Jev Search — Picks where to search. Ranks what comes back.' }],
   }),
   component: SearchPage,
 });
@@ -39,9 +39,9 @@ export const Route = createFileRoute('/search')({
 function Header({ q }: { q: string }) {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-      <div className="relative mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
+      <div className="relative mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
         <Wordmark size="sm" />
-        <div className="flex-1 max-w-2xl">
+        <div className="w-full min-w-0 max-w-2xl sm:flex-1">
           <SearchBox initial={q} compact key={q} />
         </div>
       </div>
@@ -66,7 +66,7 @@ function SearchPage() {
   return (
     <>
       <Header q={params.q} />
-      <main className="mx-auto max-w-5xl px-4 py-4">
+      <main className="mx-auto w-full max-w-5xl px-4 py-4">
         {!params.q.trim() && <p className="text-muted-foreground">Type something to search.</p>}
 
         {state.phase === 'error' && (

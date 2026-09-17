@@ -46,7 +46,7 @@ export function SearchBox({
         maxLength={300}
         name="q"
         onChange={(event) => setValue(event.target.value)}
-        placeholder="what are people saying about … this week"
+        placeholder="What are you looking for?"
         value={value}
       />
     </form>

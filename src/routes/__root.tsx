@@ -1,4 +1,4 @@
-import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router';
+import { HeadContent, Link, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import appCss from '../styles.css?url';
 
@@ -6,9 +6,8 @@ export const Route = createRootRoute({
   head: () => ({
     links: [
       { href: appCss, rel: 'stylesheet' },
-      { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' },
-      { href: '/favicon.ico', rel: 'icon', sizes: '32x32' },
-      { href: '/apple-touch-icon.png', rel: 'apple-touch-icon' },
+      { href: '/favicon.png', rel: 'icon', type: 'image/png', sizes: '400x400' },
+      { href: '/apple-touch-icon.png?v=typesafe', rel: 'apple-touch-icon', sizes: '400x400' },
       { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
       { href: 'https://fonts.gstatic.com', rel: 'preconnect', crossOrigin: 'anonymous' },
       {
@@ -19,10 +18,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },
-      { title: 's1 ask — Jev for Search' },
+      { title: 'Jev Search — Picks where to search. Ranks what comes back.' },
       {
         content:
-          "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across the engines, and puts the results that answer you first. No generated answers.",
+          "TypeSafe's Jev reads your question, selects sources, time ranges and search terms, and ranks the results. No generated answers.",
         name: 'description',
       },
     ],
@@ -44,6 +43,8 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { readonly children: ReactNode }) {
+  const isHome = useRouterState({ select: (state) => state.location.pathname === '/' });
+
   return (
     <html lang="en">
       <head>
@@ -52,13 +53,13 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
       <body className="min-h-dvh flex flex-col">
         <div className="flex flex-1 flex-col">{children}</div>
         <footer className="border-t px-4 py-4 text-xs text-muted-foreground">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2">
+          <div className={isHome ? 'mx-auto max-w-5xl text-center' : 'mx-auto max-w-5xl'}>
             <span>
               Understanding and ranking by{' '}
               <a className="text-foreground/80 hover:underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
                 Jev, TypeSafe's judgment model
               </a>
-              {' · '}engines via{' '}
+              {' · '}built by{' '}
               <a className="text-foreground/80 hover:underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
                 Search1API
               </a>

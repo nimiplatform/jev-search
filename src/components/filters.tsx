@@ -1,4 +1,4 @@
-import { ChevronDownIcon, PlusIcon } from 'lucide-react';
+import { ChevronDownIcon, PlusIcon, TriangleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
 import { SOURCES, WINDOWS, sourceById, windowById, type SourceId, type WindowId } from '@/lib/sources';
 import type { AskState } from '@/lib/use-ask';
@@ -6,15 +6,14 @@ import { cn } from '@/lib/utils';
 import { SourceIcon } from './source-icon';
 
 const chip =
-  'chip inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm text-muted-foreground hover:bg-accent disabled:opacity-50';
+  'chip inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm text-muted-foreground hover:bg-accent disabled:opacity-50';
 const active = 'border-foreground/50 bg-accent/60 text-foreground';
 
 /**
  * One row that is both the judge's reading of the question and the progress
  * of the search: the time window, then the sources it chose, each with its
- * count once its results are in. Before the question has been read the row
- * says so, at the same height, so nothing jumps. Everything not chosen is
- * behind "more".
+ * count once its results are in. Reserve the first row while reading the
+ * question; chips wrap when needed. Everything not chosen is behind "more".
  */
 export function Filters({
   state,
@@ -33,8 +32,8 @@ export function Filters({
   const [showMore, setShowMore] = useState(false);
   const { intent } = state;
 
-  // Same height as the chip row so nothing jumps; the working block below
-  // already says "Reading your question…".
+  // Reserve one chip row; the working block below already says
+  // "Reading your question…".
   if (!intent) return <div aria-hidden className="h-8" />;
 
   const selected = new Set(intent.sources);
@@ -66,18 +65,23 @@ export function Filters({
         </button>
         <span className="text-muted-foreground/40">·</span>
         {chosen.map((s) => {
-          const done = sourceById(s.id).lanes.every((l) => state.lanes[`${s.id}/${l.service}`]);
+          const lanes = sourceById(s.id).lanes.map((l) => state.lanes[`${s.id}/${l.service}`]);
+          const done = lanes.every(Boolean);
+          const failed = done && lanes.every((l) => l?.error && l.items.length === 0);
           return (
             <button
+              aria-label={failed ? `${s.label}: search failed. Click to leave it out.` : undefined}
               className={cn(chip, active)}
               key={s.id}
               onClick={() => toggleSource(s.id)}
-              title={`Searching ${s.label}. Click to leave it out.`}
+              title={failed ? `${s.label} couldn't finish searching. Click to leave it out.` : `Searching ${s.label}. Click to leave it out.`}
               type="button"
             >
-              <SourceIcon className="size-3.5" id={s.id} on />
+              <SourceIcon className="size-3.5" id={s.id} on={!failed} />
               {s.label}
-              {done && <span className="enter text-xs text-muted-foreground tabular-nums">{counts.get(s.id) ?? 0}</span>}
+              <span className="inline-flex w-[3ch] justify-end text-xs text-muted-foreground tabular-nums">
+                {failed ? <TriangleAlertIcon aria-hidden className="size-3.5 text-destructive" /> : done ? counts.get(s.id) ?? 0 : null}
+              </span>
             </button>
           );
         })}
@@ -94,7 +98,7 @@ export function Filters({
         )}
         {(explicitWindow || explicitSources) && (
           <button
-            className="text-xs text-muted-foreground underline"
+            className="shrink-0 whitespace-nowrap text-xs text-muted-foreground underline"
             onClick={() => {
               onWindow(undefined);
               onSources(undefined);
