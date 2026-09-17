@@ -45,7 +45,7 @@ export async function cachedSearch(
   }
   const results = await run();
   if (results.length > 0) {
-    cache.put(key, JSON.stringify(results), { expirationTtl: cacheTtl(params) }).catch(() => undefined);
+    await cache.put(key, JSON.stringify(results), { expirationTtl: cacheTtl(params) }).catch(() => undefined);
   }
   return { results, cached: false };
 }

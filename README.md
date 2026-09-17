@@ -1,68 +1,99 @@
-# s1 ask
+# Jev Search
 
-Ask in plain language. The app picks the right sources, sends the right query, and ranks what comes back. No generated answers.
+Search the web in plain language. [TypeSafe's Jev](https://typesafe.ai) chooses sources, time ranges and search terms, then ranks the results returned through [Search1API](https://www.search1api.com). You get links and snippets, with visible relevance scores and editable filters. No generated answers.
 
-> "what are people saying about Bun 1.3 this week" → the last 7 days on Hacker News, Reddit, X and the web, ranked by whether each hit is about Bun the runtime, not hair buns.
-> "who directed Oppenheimer and who is in it" → any time, web + Wikipedia + IMDb.
-> "Claude Code 入门教程视频" → YouTube only.
+**[Try Jev Search](https://jev.s1.dev)**
 
-**How it works**
+Built by Search1API. This is an independent project, not an official TypeSafe product.
 
-1. **Understand the request.** [TypeSafe](https://typesafe.ai)'s Jev model answers typed questions about the request: whether it wants recent results and how recent (any time by default, or 24h / 7d / 30d), which sources fit, and which keyword candidate to send to the engines. It returns probabilities, not prose, so code owns every decision. Everything it inferred is shown as chips the user can change.
-2. **Search each source, on more than one engine where it helps.** Everything goes through [Search1API](https://www.search1api.com). Google and DuckDuckGo each search the open web; Hacker News, Reddit and GitHub are each queried on both of those engines with `include_sites` (and `time_range` when a window is set), a URL both return is one row that says "found by 2 engines", and one engine failing does not empty the source. X, arXiv, YouTube, Wikipedia, IMDb and WeChat use Search1API's vertical engines. Snippets that carry a date ("3 days ago …", "2026-09-13") give freshness; with a window set, anything provably older is dropped. Adding a source or an engine is one entry in `src/lib/sources.ts`.
-3. **Judge every result.** One yes/no question per result: is this about what was asked? Results are ordered by that probability, which is the "94% on topic" shown on each row; ties go to the row more engines returned, then to engine rank. With a time window set you can switch to Newest. Near-duplicates are grouped, and rows the judge calls off-topic are folded under a link.
+## How it works
 
-The whole thing streams. `POST /api/ask` returns newline-delimited JSON: first what the judge understood, then every engine lane on its own as soon as it has answered and its rows are scored, then a summary. On the page one row under the search box is the judge's reading of the question: the time window, then the sources it chose, each with its count once its results are in; everything not chosen is behind "more". Under it, where the results will land, the wait is narrated the way an agent narrates its work: "Looking for “…” · past week", then one line per source that moves from "Asking Reddit…" to "Reddit · 16 found" to "Reddit · 9 of 16 answer you". As soon as the first results are on screen the block folds to one line that keeps updating ("Still asking Hacker News… · 24 found so far", then "Asked 5 sources · 44 found · 15 answer you · 6.7s"); click to reopen it. Results fade in as each source is ranked, each with the judge's on-topic percentage; rows that did not seem to match are folded under a link at the bottom. Google is queried with the words as typed at the same moment the judge starts reading them; when the judge keeps those words and wants no time window (most factual questions) that call is the Google lane and the first results land about a second sooner. Each engine call has a 6-second cap so one slow engine cannot hold the page, and every engine call is cached.
+1. **Understand.** Jev answers typed questions about your request. The application uses those judgments to choose a query, sources and a time range. You can override the source and time chips.
+2. **Search.** Google and DuckDuckGo search the open web. Hacker News, Reddit and GitHub use site restrictions on both engines. X, arXiv, YouTube, Wikipedia, IMDb and WeChat use vertical engines. Calls run concurrently; one failed engine does not discard another engine's results.
+3. **Rank.** Jev scores each result for relevance. Results are merged by URL, ordered by relevance, engine agreement and original rank, and streamed as each lane finishes. Lower-scoring results are grouped separately. A failed source shows a warning rather than a zero-result count.
 
-Every edit to the chips, every click and every thumbs-up is logged (anonymously, to Cloudflare Analytics Engine) so the judge can be evaluated against real use.
+Try “TypeSafe Jev API documentation and examples”, “Jev discussions on Hacker News this week”, or “Videos about TypeSafe Jev this month”. These are plain-language requests, not hardcoded filters. Model choices and provider coverage can vary.
 
-## Run it
+The application streams newline-delimited JSON from `POST /api/ask`: `intent`, `found` (progress counts), `lane` (ranked results), and `done`. Each engine has a 15-second deadline within an overall 30-second request deadline. Google may start speculatively while Jev interprets the question. Successful, non-empty engine responses are cached for 10 minutes to 6 hours, depending on the time window.
 
-Requires Node 20.19+ and pnpm. Two API keys:
+## Local development
 
-- `SEARCH1API_API_KEY` from [search1api.com](https://www.search1api.com)
-- `TYPESAFE_API_KEY` from [typesafe.ai](https://typesafe.ai)
+Requires Node.js 22.12+ and pnpm 10.8.0. Obtain API keys from [Search1API](https://www.search1api.com) and [TypeSafe](https://typesafe.ai).
 
 ```bash
-pnpm install
-cp .dev.vars.example .dev.vars   # fill in the two keys
-pnpm dev                          # http://localhost:3030
+git clone https://github.com/superagents-lab/jev-search.git
+cd jev-search
+corepack enable
+pnpm install --frozen-lockfile
+cp .dev.vars.example .dev.vars
+# Set SEARCH1API_API_KEY and TYPESAFE_API_KEY in .dev.vars.
+pnpm dev
 ```
 
-## Deploy
-
-It is a Cloudflare Worker (TanStack Start + `@cloudflare/vite-plugin`).
+Open http://localhost:3030. Local development uses local Cloudflare bindings. Keep `.dev.vars` private; it is ignored by Git. `.env.example` is provided as a variable reference, but `.dev.vars` is the documented local configuration.
 
 ```bash
-wrangler secret put SEARCH1API_API_KEY
-wrangler secret put TYPESAFE_API_KEY
-pnpm deploy
+pnpm generate-routes
+pnpm cf-typegen
+pnpm test
+pnpm build
+pnpm exec wrangler deploy --dry-run
 ```
 
-`wrangler.jsonc` also declares a KV namespace that caches each engine call by query, engine and time window (10 minutes for "past day", up to 6 hours for "any time"), an optional per-IP rate limit (30 searches per minute), and an Analytics Engine dataset for feedback. Create the namespace with `wrangler kv namespace create CACHE` and paste its id; remove any block you do not want.
+Tests mock providers and do not need API keys. Building does not call either provider. `worker-configuration.d.ts` is generated from Wrangler configuration; regenerate it after changing bindings.
 
-## Layout
+## Deploy to Cloudflare Workers
 
+The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers, KV and optionally Analytics Engine enabled.
+
+1. Run `pnpm exec wrangler login`.
+2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account.
+3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
+4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap.
+5. Optionally rename the Analytics Engine dataset, or remove its binding to disable application analytics. Regenerate types after changing bindings. `CACHE`, `FEEDBACK` and `SEARCH_RATE_LIMIT` are optional.
+6. Upload your own provider keys and deploy:
+
+```bash
+pnpm exec wrangler secret put SEARCH1API_API_KEY
+pnpm exec wrangler secret put TYPESAFE_API_KEY
+pnpm cf-typegen
+pnpm test
+pnpm run deploy:dry-run
+pnpm run deploy
 ```
-src/lib/sources.ts     source and window registry (add a source here)
-src/lib/candidates.ts  keyword-query candidates built from the request
-src/lib/typesafe.ts    TypeSafe client + the two judgments (intent, relevance)
-src/lib/search1api.ts  Search1API client
-src/lib/freshness.ts   age parsed from snippet prefixes ("3 days ago ...")
-src/lib/rank.ts        composite score, clustering
-src/lib/pipeline.ts    orchestration as an event stream: infer → per-source fan out → judge
-src/lib/use-ask.ts     client hook that consumes the stream
-src/routes/api/ask.ts  POST /api/ask (NDJSON), same-origin check, rate limit, logging
-src/server/search.ts   feedback server function
-src/routes/            /  and  /search?q=&w=&s=
-```
 
-Tests: `pnpm test`. Typecheck and build: `pnpm build`.
+Wrangler can create the Worker when uploading its first secret. Provider keys stay in Cloudflare secrets and are never included in the browser bundle. Each search can make several billable provider calls. Configure provider spending limits for a public deployment; the same-origin check is a browser boundary, not authentication.
 
-## Why no LLM answer
+GitHub Actions validates pull requests and pushes with tests, type generation and a production build. Deployment is a separate, authenticated `pnpm run deploy` operation.
 
-The point is to see the sources, fast, with the judgment visible. A model that only selects and scores cannot hallucinate a result; it can only rank one wrongly, and you can see and correct that.
+## Data and limitations
 
-## License
+- Search requests go to TypeSafe and Search1API. TypeSafe also receives result titles and snippets for relevance scoring. Search1API queries the selected engines.
+- Cloudflare KV stores query-derived cache keys and result snippets for the configured TTL. Removing `CACHE` disables this cache.
+- With `FEEDBACK` enabled, Analytics Engine records search text, inferred query, selected sources and time range, counts, timings and token usage. Result-click events include search text, destination URL, source, relevance and rank. These records are **not anonymous query data**. The application does not add IP addresses to those events; the rate limiter uses the client IP. Cloudflare request logging is enabled separately in the configuration.
+- The page loads a font from Google Fonts. Result links lead to third-party sites.
+- Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering relies partly on dates detectable in snippets; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
 
-MIT
+## Project layout
+
+| Path | Responsibility |
+| --- | --- |
+| `src/lib/sources.ts` | Sources, engine mappings and time windows |
+| `src/lib/candidates.ts` | Search-query candidates |
+| `src/lib/typesafe.ts` | Typed intent and relevance judgments |
+| `src/lib/search1api.ts` | Search provider client and engine deadlines |
+| `src/lib/pipeline.ts` | Concurrent search and ranking stream |
+| `src/lib/cache.ts` | Per-engine response cache |
+| `src/lib/rank.ts`, `merge.ts` | Ordering, grouping and URL deduplication |
+| `src/lib/use-ask.ts` | Client stream consumer |
+| `src/routes/api/ask.ts` | Search endpoint, origin validation and rate limiting |
+| `src/server/` | Cloudflare bindings and analytics |
+| `test/` | Provider-independent regression tests |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## License and attribution
+
+Application code is [MIT licensed](LICENSE). TypeSafe and Jev names and brand assets belong to their respective owners and are not included in this project's MIT license.
+
+The favicon and Apple Touch Icon come from the icon links on [typesafe.ai](https://typesafe.ai/): [favicon](https://framerusercontent.com/images/aNFzSFxM4fjICmnibw7npfZjcQ.png) and [Apple Touch Icon](https://framerusercontent.com/images/kcuF2BEp5XaVfkmFB634IPRKQH0.png). Source icons use [Simple Icons](https://simpleicons.org); interface icons use [Lucide](https://lucide.dev). For your own branding, replace the icons in `public/` and update `src/components/wordmark.tsx` and the page metadata.

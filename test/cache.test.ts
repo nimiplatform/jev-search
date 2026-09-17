@@ -14,7 +14,21 @@ describe('cachedSearch', () => {
     expect(cacheTtl(params)).toBe(3600);
     expect(cacheKey(params)).not.toBe(cacheKey({ ...params, timeRange: 'day' }));
   });
-  it('does not cache empty results', async () => {
+  it('waits for cache writes and keeps results when storage fails', async () => {
+    const results = [{ title: 't', link: 'https://a.com', snippet: 's' }];
+    let finish!: () => void;
+    const put = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+    let settled = false;
+    const response = cachedSearch({ get: async () => null, put }, { query: 'x' }, async () => results)
+      .then((value) => { settled = true; return value; });
+    await vi.waitFor(() => expect(put).toHaveBeenCalledOnce());
+    expect(settled).toBe(false);
+    finish();
+    expect((await response).results).toEqual(results);
+    const broken = { get: async () => { throw new Error('Unavailable'); }, put: async () => { throw new Error('Unavailable'); } };
+    expect((await cachedSearch(broken, { query: 'x' }, async () => results)).results).toEqual(results);
+  });
+  it('does not cache empty results' , async () => {
     const cache = memoryCache();
     const run = vi.fn(async () => []);
     await cachedSearch(cache, { query: 'x', timeRange: undefined }, run);

@@ -65,7 +65,8 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
     const controller = new AbortController();
     setState({ ...IDLE, phase: 'understanding' });
 
-    const apply = (event: Incoming) => setState((s) => reduce(s, event));
+    const apply = (event: Incoming) =>
+      setState((s) => controller.signal.aborted ? s : reduce(s, event));
 
     (async () => {
       let response: Response;

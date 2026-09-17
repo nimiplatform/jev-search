@@ -1,9 +1,9 @@
 {
-  "name": "s1-ask",
+  "name": "jev-search",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "s1 ask: ask in plain language, get the right sources across the web and vertical engines, ranked. Powered by Search1API and TypeSafe.",
+  "description": "Jev Search by Search1API: search the web across engines, with sources chosen and results ranked by TypeSafe's Jev.",
   "scripts": {
     "dev": "vite dev --port 3030",
     "generate-routes": "tsr generate",
@@ -46,5 +46,14 @@
   "engines": {
     "node": ">=20.19.0"
   },
-  "packageManager": "pnpm@10.8.0"
+  "packageManager": "pnpm@10.8.0",
+  "license": "MIT",
+  "homepage": "https://jev.s1.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/superagents-lab/jev-search.git"
+  },
+  "bugs": {
+    "url": "https://github.com/superagents-lab/jev-search/issues"
+  }
 }

@@ -51,7 +51,7 @@ export interface IntentEvent {
   intentMs: number;
 }
 
-/** An engine has answered; its rows are on the page unscored while the judge works. */
+/** An engine has answered; the UI shows its count while the judge scores its rows. */
 export interface FoundEvent {
   type: 'found';
   source: SourceId;

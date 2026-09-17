@@ -1,33 +1,26 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "s1-ask",
+  "name": "jev-search",
   "main": "@tanstack/react-start/server-entry",
   "compatibility_date": "2026-07-17",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  // Self-hosters: remove this route to use workers.dev, or set your own domain.
+  "routes": [{ "pattern": "jev.s1.dev", "custom_domain": true }],
   "vars": {
     "SEARCH1API_BASE_URL": "https://api.search1api.com",
     "TYPESAFE_MODEL": "jev-latest"
   },
-  // Secrets: `wrangler secret put <NAME>` in production, `.dev.vars` locally.
-  //   SEARCH1API_API_KEY  https://www.search1api.com
-  //   TYPESAFE_API_KEY    https://typesafe.ai
-  "unsafe": {
-    "bindings": [
-      {
-        "name": "SEARCH_RATE_LIMIT",
-        "type": "ratelimit",
-        "namespace_id": "1001",
-        "simple": { "limit": 30, "period": 60 }
-      }
-    ]
-  },
-  // Lane results cached by query, engine and window (10 min for "past day",
-  // up to 6 h for "any time"). Create with `wrangler kv namespace create CACHE`
-  // and paste the id; remove the block to run without a cache.
-  "kv_namespaces": [{ "binding": "CACHE", "id": "00000000000000000000000000000000" }],
-  "analytics_engine_datasets": [
-    { "binding": "FEEDBACK", "dataset": "s1_ask_feedback" }
-  ],
+  "secrets": { "required": ["SEARCH1API_API_KEY", "TYPESAFE_API_KEY"] },
+  "ratelimits": [{
+    "name": "SEARCH_RATE_LIMIT",
+    "namespace_id": "2026091801",
+    "simple": { "limit": 30, "period": 60 }
+  }],
+  // Self-hosters: create a namespace and replace this public resource ID.
+  "kv_namespaces": [{ "binding": "CACHE", "id": "ff6092d31fbf4f5999be145d5dd8e84d" }],
+  // Optional. Remove this binding to disable search and click analytics.
+  "analytics_engine_datasets": [{ "binding": "FEEDBACK", "dataset": "jev_search_feedback" }],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "invocation_logs": true }

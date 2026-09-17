@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { askStream, type AskEvent } from '@/lib/pipeline';
 import { validateAskRequest } from '@/lib/validate';
 import { getEnv } from '@/server/env.server';
+import { writeAnalytics } from '@/server/analytics';
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -76,7 +77,7 @@ export const Route = createFileRoute('/api/ask')({
                 } else if (event.type === 'lane') {
                   count += event.items.length;
                 } else if (event.type === 'done') {
-                  env.FEEDBACK?.writeDataPoint({
+                  writeAnalytics(env.FEEDBACK, {
                     indexes: ['ask'],
                     blobs: ['ask', data.q, ...intentLine, data.w ? 'user' : 'inferred', data.s ? 'user' : 'inferred'],
                     doubles: [count, event.totalMs, event.tokens],

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getEnv } from './env.server';
+import { writeAnalytics } from './analytics';
 
 export interface FeedbackEvent {
   kind: 'click' | 'useful' | 'irrelevant';
@@ -36,10 +37,10 @@ export const feedbackFn = createServerFn({ method: 'POST' })
     } catch {
       return { ok: false as const };
     }
-    env.FEEDBACK?.writeDataPoint({
+    const ok = writeAnalytics(env.FEEDBACK, {
       indexes: [data.kind],
       blobs: [data.kind, data.request, data.url, data.source],
       doubles: [data.relevance, data.rank],
     });
-    return { ok: true as const };
+    return { ok };
   });
