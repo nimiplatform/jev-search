@@ -79,6 +79,15 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
                 Search1API
               </a>
               {' · '}no generated answers{' · '}your query is sent to both
+              {' · '}
+              <a
+                className="whitespace-nowrap text-foreground/80 hover:underline"
+                href="https://github.com/superagents-lab/jev-search"
+                rel="noreferrer"
+                target="_blank"
+              >
+                GitHub
+              </a>
             </span>
           </div>
         </footer>

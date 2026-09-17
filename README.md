@@ -64,7 +64,19 @@ pnpm run deploy
 
 Wrangler can create the Worker when uploading its first secret. Provider keys stay in Cloudflare secrets and are never included in the browser bundle. Each search can make several billable provider calls. Configure provider spending limits for a public deployment; the same-origin check is a browser boundary, not authentication.
 
-GitHub Actions validates pull requests and pushes with tests, type generation and a production build. Deployment is a separate, authenticated `pnpm run deploy` operation.
+GitHub Actions validates pull requests and pushes with tests, type generation and a production build. The hosted demo deploys through Cloudflare Workers Builds when changes are pushed to `main`.
+
+For Cloudflare's Git integration, use these settings:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | Repository root (`/`) |
+| Production branch | `main` |
+| Build command | `pnpm run build` |
+| Deploy command | `pnpm exec wrangler deploy` |
+| Node.js version | 22.12+ |
+
+Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Worker and static assets and writes the Wrangler deployment configuration. Keep the existing provider keys in the Worker's runtime secrets; builds do not need them. For manual self-hosting, `pnpm run deploy` combines the build and deploy steps.
 
 ## Data and limitations
 
