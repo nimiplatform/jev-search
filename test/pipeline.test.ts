@@ -108,7 +108,7 @@ describe('runSearch', () => {
     const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0);
     const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com');
     expect(web.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
-    expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
+    expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com'] });
     expect(gh.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
   });
 

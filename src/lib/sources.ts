@@ -115,7 +115,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'x',
     label: 'X',
-    lanes: siteLanes('x.com'),
+    lanes: [{ service: 'x' }],
     description: 'Posts on X (formerly Twitter)',
     ask: {
       question: 'Would posts on X (Twitter) fit this request?',

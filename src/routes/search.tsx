@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Filters } from '@/components/filters';
-import { Steps } from '@/components/steps';
 import { Results, ResultsPlaceholder } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
@@ -79,7 +78,6 @@ function SearchPage() {
         {params.q.trim() && state.phase !== 'error' && (
           <div className="max-w-3xl">
             <div className="min-w-0">
-              <Steps state={state} />
               <Filters
                 state={state}
                 explicitWindow={params.w}
