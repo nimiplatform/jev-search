@@ -8,21 +8,33 @@ export type SourceId =
   | 'youtube';
 
 /**
- * How a source is queried through Search1API.
- * - `google`: the Google path restricted with `include_sites`. Snippets carry
- *   a "3 days ago" prefix, so freshness is measurable. Undefined site = open web.
- * - `vertical`: one of Search1API's vertical engines (`search_service`). Used
- *   only where Google has no equivalent coverage; most verticals return no
- *   date and honour `time_range` loosely, so they rank on relevance alone.
+ * One Search1API `/search` call. `service` is the engine; `site` restricts a
+ * general engine with `include_sites`. A source runs all of its lanes in
+ * parallel and merges them, so one engine going down or drifting does not
+ * take the source with it, and a hit on two engines outranks a hit on one.
+ *
+ * Probed 2026-09-17 with site restriction + weekly window: google and
+ * duckduckgo honour both and prefix snippets with an age ("3 days ago ...");
+ * yahoo ignores the window, bing ignores the site, baidu returns nothing.
  */
-export type Lane =
-  | { kind: 'google'; site?: string }
-  | { kind: 'vertical'; service: string };
+export interface Lane {
+  service: string;
+  site?: string;
+}
+
+/** General engines that search the whole web and need `exclude_sites` on the open-web source. */
+export const GENERAL_ENGINES = new Set(['google', 'duckduckgo', 'bing', 'yahoo']);
+
+const COMMUNITY_ENGINES = ['google', 'duckduckgo'] as const;
+
+function siteLanes(site?: string): Lane[] {
+  return COMMUNITY_ENGINES.map((service) => (site ? { service, site } : { service }));
+}
 
 export interface Source {
   id: SourceId;
   label: string;
-  lane: Lane;
+  lanes: Lane[];
   /** Plain-language description handed to the judge. */
   description: string;
   /** Yes/no question the judge answers to decide whether this source is wanted. */
@@ -35,7 +47,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'hackernews',
     label: 'Hacker News',
-    lane: { kind: 'google', site: 'news.ycombinator.com' },
+    lanes: siteLanes('news.ycombinator.com'),
     description: 'Hacker News threads and comments',
     ask: {
       question: 'Does the user ask for Hacker News (HN) specifically?',
@@ -47,7 +59,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'reddit',
     label: 'Reddit',
-    lane: { kind: 'google', site: 'reddit.com' },
+    lanes: siteLanes('reddit.com'),
     description: 'Reddit posts and comment threads',
     ask: {
       question: 'Does the user ask for Reddit specifically?',
@@ -59,7 +71,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'github',
     label: 'GitHub',
-    lane: { kind: 'google', site: 'github.com' },
+    lanes: siteLanes('github.com'),
     description: 'GitHub repositories, issues, pull requests and releases',
     ask: {
       question: 'Is the user looking for code: repositories, releases, issues, pull requests or open source projects?',
@@ -71,7 +83,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'x',
     label: 'X',
-    lane: { kind: 'google', site: 'x.com' },
+    lanes: siteLanes('x.com'),
     description: 'Posts on X (formerly Twitter)',
     ask: {
       question: 'Does the user ask for X (Twitter) specifically?',
@@ -83,7 +95,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'web',
     label: 'Web',
-    lane: { kind: 'google' },
+    lanes: siteLanes(),
     description: 'News sites, blogs and documentation anywhere else on the web',
     ask: {
       question: 'Is the user asking for news coverage, articles or blog posts?',
@@ -95,7 +107,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'arxiv',
     label: 'arXiv',
-    lane: { kind: 'vertical', service: 'arxiv' },
+    lanes: [{ service: 'arxiv' }],
     description: 'Academic papers and preprints on arXiv',
     ask: {
       question: 'Is the user asking for academic papers, research or preprints?',
@@ -107,7 +119,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'youtube',
     label: 'YouTube',
-    lane: { kind: 'vertical', service: 'youtube' },
+    lanes: [{ service: 'youtube' }],
     description: 'Videos on YouTube',
     ask: {
       question: 'Is the user asking for videos?',
@@ -121,9 +133,9 @@ export const SOURCES: readonly Source[] = [
 export const DEFAULT_SOURCE_IDS = SOURCES.filter((s) => s.defaultOn).map((s) => s.id);
 
 /** Sites that the open-web lane excludes so it does not duplicate the others. */
-export const RESTRICTED_SITES = SOURCES.flatMap((s) =>
-  s.lane.kind === 'google' && s.lane.site ? [s.lane.site] : []
-);
+export const RESTRICTED_SITES = [
+  ...new Set(SOURCES.flatMap((s) => s.lanes.flatMap((l) => (l.site ? [l.site] : [])))),
+];
 
 export const SOURCE_IDS = SOURCES.map((s) => s.id) as readonly SourceId[];
 

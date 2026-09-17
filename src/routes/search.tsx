@@ -121,7 +121,7 @@ function SearchPage() {
               </p>
               {data.errors.length > 0 && (
                 <p className="mt-2 text-xs text-destructive">
-                  {data.errors.map((e) => `${e.source}: ${e.message}`).join(' · ')}
+                  {data.errors.map((e) => `${e.source}/${e.engine}: ${e.message}`).join(' · ')}
                 </p>
               )}
               <Results clusters={clusters} request={data.request} weights={weights} />

@@ -12,8 +12,10 @@ export interface RankedItem {
   relevance: number;
   /** 0..1, newer is higher, relative to the chosen window. */
   freshness: number;
-  /** Engine rank within its source, 1-based. */
+  /** Rank within its source after merging that source's lanes, 1-based. */
   position: number;
+  /** Engines that returned this URL. */
+  engines: string[];
 }
 
 export interface Weights {
@@ -28,9 +30,12 @@ export const DEFAULT_WEIGHTS: Weights = {
   position: 0.1,
 };
 
-/** Reciprocal-rank style prior: engine rank 1 → 1.0, rank 10 → ~0.55. */
-export function positionScore(position: number): number {
-  return 6 / (5 + position);
+/**
+ * Reciprocal-rank style prior: rank 1 → 0.83, rank 10 → 0.33, plus 0.15 for
+ * every extra engine that also returned the URL (agreement is evidence).
+ */
+export function positionScore(position: number, engines = 1): number {
+  return Math.min(1, 5 / (5 + position) + 0.15 * Math.max(0, engines - 1));
 }
 
 export function compositeScore(item: RankedItem, weights: Weights): number {
@@ -38,9 +43,33 @@ export function compositeScore(item: RankedItem, weights: Weights): number {
   return (
     (item.relevance * weights.relevance +
       item.freshness * weights.freshness +
-      positionScore(item.position) * weights.position) /
+      positionScore(item.position, item.engines.length) * weights.position) /
     total
   );
+}
+
+/**
+ * Reciprocal rank fusion of several engines' lists for one source. Same URL
+ * from two engines becomes one row that remembers both engines.
+ */
+export function fuseLanes<T extends { link: string }>(
+  lists: { engine: string; results: T[] }[],
+  k = 60
+): { result: T; engines: string[]; score: number }[] {
+  const merged = new Map<string, { result: T; engines: string[]; score: number }>();
+  for (const { engine, results } of lists) {
+    results.forEach((result, index) => {
+      const key = canonicalUrl(result.link);
+      const row = merged.get(key);
+      if (row) {
+        row.score += 1 / (k + index + 1);
+        if (!row.engines.includes(engine)) row.engines.push(engine);
+      } else {
+        merged.set(key, { result, engines: [engine], score: 1 / (k + index + 1) });
+      }
+    });
+  }
+  return [...merged.values()].sort((a, b) => b.score - a.score);
 }
 
 export interface Cluster {

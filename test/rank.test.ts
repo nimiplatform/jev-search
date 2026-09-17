@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_WEIGHTS, canonicalUrl, clusterItems, compositeScore, titleKey, type RankedItem } from '@/lib/rank';
+import { DEFAULT_WEIGHTS, canonicalUrl, clusterItems, compositeScore, fuseLanes, positionScore, titleKey, type RankedItem } from '@/lib/rank';
 
 function item(partial: Partial<RankedItem> & { id: string }): RankedItem {
   return {
@@ -11,6 +11,7 @@ function item(partial: Partial<RankedItem> & { id: string }): RankedItem {
     relevance: 0.5,
     freshness: 0.5,
     position: 1,
+    engines: ['google'],
     ...partial,
   };
 }
@@ -42,5 +43,17 @@ describe('clusterItems', () => {
     expect(clusters.map((cl) => cl.lead.id)).toEqual(['a', 'b']);
     expect(clusters[0]!.others.map((o) => o.id)).toEqual(['c']);
     expect(compositeScore(a, DEFAULT_WEIGHTS)).toBeGreaterThan(compositeScore(b, DEFAULT_WEIGHTS));
+  });
+});
+
+describe('fuseLanes', () => {
+  it('merges the same URL across engines and ranks agreement first', () => {
+    const fused = fuseLanes([
+      { engine: 'google', results: [{ link: 'https://a.com/1' }, { link: 'https://b.com/2' }] },
+      { engine: 'duckduckgo', results: [{ link: 'https://c.com/3' }, { link: 'https://www.a.com/1/' }] },
+    ]);
+    expect(fused.map((f) => f.result.link)).toEqual(['https://a.com/1', 'https://c.com/3', 'https://b.com/2']);
+    expect(fused[0]!.engines).toEqual(['google', 'duckduckgo']);
+    expect(positionScore(1, 2)).toBeGreaterThan(positionScore(1, 1));
   });
 });

@@ -53,6 +53,9 @@ function ResultRow({
         <span className="font-medium text-foreground/80">{sourceById(item.source).label}</span>
         <span className="truncate">{displayUrl(item.url)}</span>
         {age && <span>· {age}</span>}
+        {item.engines.length > 1 && (
+          <span title={item.engines.join(' + ')}>· {item.engines.length} engines</span>
+        )}
       </div>
       <a
         className={cn(

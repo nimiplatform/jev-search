@@ -38,6 +38,14 @@ function stubFetch() {
       }
 
       if (url.endsWith('/search')) {
+        if (body.search_service === 'duckduckgo') {
+          return jsonResponse({
+            results: [
+              { title: 'Old thread', link: 'https://www.reddit.com/r/bun/old', snippet: 'Oct 10, 2025 · stale' },
+              { title: 'Should I move away from Bun? - Reddit', link: 'https://reddit.com/r/bun/1/', snippet: '3 days ago ... runtime' },
+            ],
+          });
+        }
         return jsonResponse({
           results: [
             { title: 'Should I move away from Bun? - Reddit', link: 'https://www.reddit.com/r/bun/1', snippet: '3 days ago ... runtime' },
@@ -67,17 +75,19 @@ describe('runSearch', () => {
     expect(out.sources).toEqual(['reddit']);
     expect(out.query).toBe('Bun 1.3');
 
-    const searchCall = calls.find((c) => c.url.endsWith('/search'))!;
-    expect(searchCall.body).toMatchObject({
+    const searchCalls = calls.filter((c) => c.url.endsWith('/search'));
+    expect(searchCalls.map((c) => c.body.search_service)).toEqual(['google', 'duckduckgo']);
+    expect(searchCalls[0]!.body).toMatchObject({
       query: 'Bun 1.3',
-      search_service: 'google',
       time_range: 'week',
       include_sites: ['reddit.com'],
     });
 
+    // Lanes fused: the shared URL is one row with both engines; the stale
+    // duckduckgo row (Oct 2025) is outside the window and dropped.
     expect(out.items).toHaveLength(2);
-    expect(out.items[0]).toMatchObject({ id: 'reddit:1', relevance: 0.95, ageHours: 72, snippet: 'runtime' });
-    expect(out.items[1]).toMatchObject({ id: 'reddit:2', relevance: 0.05, ageHours: 24 });
+    expect(out.items[0]).toMatchObject({ id: 'reddit:1', relevance: 0.95, ageHours: 72, snippet: 'runtime', engines: ['google', 'duckduckgo'] });
+    expect(out.items[1]).toMatchObject({ id: 'reddit:2', relevance: 0.05, ageHours: 24, engines: ['google'] });
     expect(out.tokens).toBe(200);
   });
 
@@ -90,9 +100,10 @@ describe('runSearch', () => {
     expect(out.window).toBe('24h');
     expect(out.sources).toEqual(['web', 'github']);
     const searches = calls.filter((c) => c.url.endsWith('/search'));
-    expect(searches).toHaveLength(2);
-    expect(searches[0]!.body).toMatchObject({ time_range: 'day', include_sites: [], exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
-    expect(searches[1]!.body).toMatchObject({ include_sites: ['github.com'] });
+    expect(searches).toHaveLength(4);
+    expect(searches[0]!.body).toMatchObject({ search_service: 'google', time_range: 'day', include_sites: [], exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
+    expect(searches[1]!.body).toMatchObject({ search_service: 'duckduckgo', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
+    expect(searches[2]!.body).toMatchObject({ search_service: 'google', include_sites: ['github.com'] });
   });
 
   it('uses the vertical engine for vertical sources', async () => {
@@ -119,7 +130,10 @@ describe('runSearch', () => {
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
       { request: 'Bun 1.3', sources: ['reddit', 'github'] }
     );
-    expect(out.errors).toEqual([{ source: 'github', message: 'upstream broke' }]);
+    expect(out.errors).toEqual([
+      { source: 'github', engine: 'google', message: 'upstream broke' },
+      { source: 'github', engine: 'duckduckgo', message: 'upstream broke' },
+    ]);
     expect(out.items.map((i) => i.source)).toEqual(['reddit', 'reddit']);
   });
 });

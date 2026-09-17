@@ -1,10 +1,11 @@
 import { buildCandidates } from './candidates';
 import { freshnessScore, parseAgeHours, stripAgePrefix } from './freshness';
-import type { RankedItem } from './rank';
-import { search, type Search1ApiConfig } from './search1api';
+import { fuseLanes, type RankedItem } from './rank';
+import { search, type RawResult, type Search1ApiConfig } from './search1api';
 import {
   DEFAULT_SOURCE_IDS,
   DEFAULT_WINDOW,
+  GENERAL_ENGINES,
   RESTRICTED_SITES,
   SOURCE_IDS,
   sourceById,
@@ -35,13 +36,16 @@ export interface SearchOutput {
     query: Intent['query'];
   };
   items: RankedItem[];
-  errors: { source: SourceId; message: string }[];
+  errors: { source: SourceId; engine: string; message: string }[];
   timing: { intentMs: number; searchMs: number; rerankMs: number };
   tokens: number;
 }
 
 const SOURCE_PROB_THRESHOLD = 0.6;
-const RESULTS_PER_SOURCE = 8;
+const RESULTS_PER_LANE = 8;
+const RESULTS_PER_SOURCE = 10;
+/** Engines apply time filters loosely; drop anything provably older than this multiple of the window. */
+const WINDOW_TOLERANCE = 1.5;
 
 export interface PipelineDeps {
   search1api: Search1ApiConfig;
@@ -84,41 +88,55 @@ export async function runSearch(
   const query = candidates[intent.query.index] ?? candidates[0]!;
   const win = windowById(window);
 
-  // 2. Fan out one engine call per source.
+  // 2. Fan out every lane of every source, then fuse lanes per source.
   const t1 = performance.now();
+  const laneCalls = sources.flatMap((id) =>
+    sourceById(id).lanes.map((lane) => ({ id, lane }))
+  );
   const settled = await Promise.allSettled(
-    sources.map((id) => {
-      const { lane } = sourceById(id);
-      const params =
-        lane.kind === 'vertical'
-          ? { service: lane.service }
-          : {
-              includeSites: lane.site ? [lane.site] : [],
-              excludeSites: lane.site ? [] : RESTRICTED_SITES,
-            };
-      return search(
+    laneCalls.map(({ lane }) =>
+      search(
         deps.search1api,
-        { query, timeRange: win.timeRange, maxResults: RESULTS_PER_SOURCE, ...params },
+        {
+          query,
+          service: lane.service,
+          timeRange: win.timeRange,
+          maxResults: RESULTS_PER_LANE,
+          includeSites: lane.site ? [lane.site] : [],
+          excludeSites: !lane.site && GENERAL_ENGINES.has(lane.service) ? RESTRICTED_SITES : [],
+        },
         signal
-      );
-    })
+      )
+    )
   );
   const searchMs = Math.round(performance.now() - t1);
 
   const errors: SearchOutput['errors'] = [];
-  const items: RankedItem[] = [];
+  const bySource = new Map<SourceId, { engine: string; results: RawResult[] }[]>();
   settled.forEach((result, i) => {
-    const source = sources[i]!;
+    const { id, lane } = laneCalls[i]!;
     if (result.status === 'rejected') {
       const message =
         result.reason instanceof Error ? result.reason.message : String(result.reason);
-      errors.push({ source, message });
+      errors.push({ source: id, engine: lane.service, message });
       return;
     }
-    result.value.forEach((raw, index) => {
+    const lists = bySource.get(id) ?? [];
+    lists.push({ engine: lane.service, results: result.value });
+    bySource.set(id, lists);
+  });
+
+  const maxAge = win.hours * WINDOW_TOLERANCE;
+  const items: RankedItem[] = [];
+  for (const source of sources) {
+    const fused = fuseLanes(bySource.get(source) ?? []).slice(0, RESULTS_PER_SOURCE);
+    let position = 0;
+    for (const { result: raw, engines } of fused) {
       const ageHours = parseAgeHours(raw.snippet, now.getTime());
+      if (ageHours !== null && ageHours > maxAge) continue;
+      position += 1;
       items.push({
-        id: `${source}:${index + 1}`,
+        id: `${source}:${position}`,
         source,
         title: raw.title,
         url: raw.link,
@@ -126,10 +144,11 @@ export async function runSearch(
         ageHours,
         relevance: 0,
         freshness: freshnessScore(ageHours, win.hours),
-        position: index + 1,
+        position,
+        engines,
       });
-    });
-  });
+    }
+  }
 
   // 3. Judge relevance of every result against the original request.
   const t2 = performance.now();
