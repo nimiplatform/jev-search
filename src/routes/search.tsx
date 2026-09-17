@@ -1,14 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
-import { ProgressBar } from '@/components/progress';
 import { Status } from '@/components/status';
 import { Results, offTopicCount } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
-import { useAsk, type AskState } from '@/lib/use-ask';
+import { useAsk } from '@/lib/use-ask';
 import { useStableOrder } from '@/lib/use-stable-order';
 
 interface SearchParams {
@@ -37,7 +36,7 @@ export const Route = createFileRoute('/search')({
   component: SearchPage,
 });
 
-function Header({ q, state }: { q: string; state: AskState }) {
+function Header({ q }: { q: string }) {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
       <div className="relative mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
@@ -45,7 +44,6 @@ function Header({ q, state }: { q: string; state: AskState }) {
         <div className="flex-1 max-w-2xl">
           <SearchBox initial={q} compact key={q} />
         </div>
-        <ProgressBar state={state} />
       </div>
     </header>
   );
@@ -70,7 +68,7 @@ function SearchPage() {
 
   return (
     <>
-      <Header q={params.q} state={state} />
+      <Header q={params.q} />
       <main className="mx-auto max-w-5xl px-4 py-4">
         {!params.q.trim() && <p className="text-muted-foreground">Type something to search.</p>}
 

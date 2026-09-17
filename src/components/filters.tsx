@@ -40,14 +40,29 @@ export function Filters({
   const counts = new Map<SourceId, number>();
   for (const item of state.items) counts.set(item.source, (counts.get(item.source) ?? 0) + 1);
 
+  // Lighting order: the window chip, then chosen sources left to right.
+  // Only when the judge chose (not when the user toggled): the user's own
+  // click needs no announcement.
+  const judged = ready && !explicitWindow && !explicitSources;
+  const litIndex = new Map<string, number>();
+  if (judged) {
+    litIndex.set(`w:${intent!.window}`, 0);
+    SOURCES.filter((s) => selected.has(s.id)).forEach((s, i) => litIndex.set(`s:${s.id}`, i + 1));
+  }
+  const litProps = (key: string) => {
+    const i = litIndex.get(key);
+    return i === undefined ? {} : { 'data-lit': '', style: { '--i': i } as React.CSSProperties };
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {WINDOWS.map((w) => (
           <button
-            className={cn(chip, ready && intent!.window === w.id && active)}
+            className={cn(chip, ready && intent!.window === w.id && active, litIndex.has(`w:${w.id}`) && 'lit')}
             disabled={!ready}
             key={w.id}
+            {...litProps(`w:${w.id}`)}
             onClick={() => onWindow(w.id === intent?.window && explicitWindow ? undefined : w.id)}
             type="button"
           >
@@ -63,11 +78,12 @@ export function Filters({
           const count = counts.get(s.id) ?? 0;
           return (
             <button
-              className={cn(chip, on && active)}
+              className={cn(chip, on && active, litIndex.has(`s:${s.id}`) && 'lit')}
               disabled={!ready}
               key={s.id}
               onClick={() => toggleSource(s.id)}
               type="button"
+              {...litProps(`s:${s.id}`)}
             >
               {on && pending && state.phase !== 'done' && (
                 <span className="inline-block size-1.5 rounded-full bg-current opacity-70 animate-pulse" />
