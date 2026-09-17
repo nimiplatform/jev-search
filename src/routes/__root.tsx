@@ -9,6 +9,12 @@ export const Route = createRootRoute({
       { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' },
       { href: '/favicon.ico', rel: 'icon', sizes: '32x32' },
       { href: '/apple-touch-icon.png', rel: 'apple-touch-icon' },
+      { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
+      { href: 'https://fonts.gstatic.com', rel: 'preconnect', crossOrigin: 'anonymous' },
+      {
+        href: 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap',
+        rel: 'stylesheet',
+      },
     ],
     meta: [
       { charSet: 'utf-8' },
@@ -16,7 +22,7 @@ export const Route = createRootRoute({
       { title: 's1 ask' },
       {
         content:
-          "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across ten engines, and puts the results that answer you first. No generated answers.",
+          "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across eleven engines, and puts the results that answer you first. No generated answers.",
         name: 'description',
       },
     ],
@@ -50,13 +56,13 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
             <span>
               Understanding and ranking by{' '}
               <a className="underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
-                TypeSafe's Jev
+                Jev, TypeSafe's judgment model
               </a>
-              . Sources via{' '}
+              {' · '}engines via{' '}
               <a className="underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
                 Search1API
               </a>
-              . Your query is sent to both.
+              {' · '}no generated answers{' · '}your query is sent to both
             </span>
           </div>
         </footer>

@@ -5,8 +5,8 @@
 
 :root {
   --radius: 1.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.2 0 0);
+  --background: oklch(0.995 0.002 255);
+  --foreground: oklch(0.22 0.01 255);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.2 0 0);
   --popover: oklch(1 0 0);
@@ -15,13 +15,13 @@
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.96 0 0);
   --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.965 0.006 255);
+  --muted-foreground: oklch(0.5 0.012 255);
+  --accent: oklch(0.96 0.008 255);
+  --accent-foreground: oklch(0.22 0.01 255);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
+  --border: oklch(0.9 0.008 255);
+  --input: oklch(0.9 0.008 255);
   --ring: oklch(0.7 0 0);
   --link: #0b5ed7;
   --visited: oklch(0.4 0.2 320);
@@ -83,7 +83,20 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-variant-numeric: tabular-nums;
   }
+  /* Browser surfaces carry the brand too. */
+  ::selection { background: color-mix(in oklch, var(--primary) 22%, transparent); }
+  :root { caret-color: var(--primary); accent-color: var(--primary); }
+  :focus-visible { outline: 2px solid color-mix(in oklch, var(--primary) 70%, transparent); outline-offset: 2px; }
+  a { text-underline-offset: 3px; }
+}
+
+/* The one display voice, for the home headline only. */
+.display {
+  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  font-optical-sizing: auto;
 }
 
 /* ---- motion ---------------------------------------------------------- */
