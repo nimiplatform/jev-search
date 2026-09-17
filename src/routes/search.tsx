@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
-import { PendingSources, Progress, ProgressBar, Understanding } from '@/components/progress';
-import { Results } from '@/components/results';
+import { ProgressBar } from '@/components/progress';
+import { Status } from '@/components/status';
+import { Results, offTopicCount } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Weights } from '@/components/weights';
 import { Wordmark } from '@/components/wordmark';
@@ -82,30 +83,17 @@ function SearchPage() {
         {params.q.trim() && state.phase !== 'error' && (
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
             <div className="min-w-0">
-              {state.intent ? (
-                <Filters
-                  intent={state.intent}
-                  explicitWindow={params.w}
-                  explicitSources={explicitSources}
-                  onWindow={setWindow}
-                  onSources={setSources}
-                />
-              ) : null}
-              {state.intent ? (
-                <div className="mt-3 flex flex-col gap-2 rounded-lg border bg-muted/30 px-3 py-2 animate-in fade-in duration-300">
-                  <Understanding intent={state.intent} />
-                  <Progress state={state} />
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">Reading the request…</p>
-              )}
-              {state.phase === 'done' && (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {state.items.length} results in {clusters.length} groups
-                </p>
-              )}
+              <Filters
+                state={state}
+                explicitWindow={params.w}
+                explicitSources={explicitSources}
+                onWindow={setWindow}
+                onSources={setSources}
+              />
+              <div className="relative mt-4">
+                <Status state={state} hiddenOffTopic={offTopicCount(clusters)} />
+              </div>
               <Results clusters={clusters} request={params.q} weights={weights} streaming={state.phase !== 'done'} />
-              <PendingSources state={state} />
             </div>
             <aside className="lg:sticky lg:top-20 lg:self-start">
               <Weights value={weights} onChange={setWeights} />

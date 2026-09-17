@@ -28,9 +28,10 @@ function Home() {
         {EXAMPLES.map((q) => (
           <li key={q}>
             <Link
-              className="rounded-full border px-3 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="chip rounded-full border px-3 py-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               search={{ q }}
               to="/search"
+              viewTransition
             >
               {q}
             </Link>

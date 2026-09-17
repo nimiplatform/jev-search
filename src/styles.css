@@ -85,3 +85,52 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* ---- motion ---------------------------------------------------------- */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-fast: 160ms;
+  --dur: 220ms;
+  --dur-focal: 320ms;
+}
+
+/* The search box and wordmark keep their identity across the home → results
+   navigation: the browser morphs them instead of swapping pages. */
+.vt-searchbox { view-transition-name: searchbox; }
+.vt-wordmark { view-transition-name: wordmark; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: var(--dur); }
+::view-transition-old(searchbox),
+::view-transition-new(searchbox),
+::view-transition-old(wordmark),
+::view-transition-new(wordmark) {
+  animation-duration: var(--dur-focal);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(searchbox),
+::view-transition-old(wordmark) { animation-name: none; opacity: 0; }
+
+/* A result group arriving. Transition (not keyframes) so a re-render can
+   retarget it; @starting-style supplies the from-state. */
+.enter {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 40ms);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Chips: state changes are colour, not movement. */
+.chip {
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+.chip:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter { transform: none; transition-delay: 0ms; @starting-style { transform: none; } }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 120ms; animation-name: none; }
+}

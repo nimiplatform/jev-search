@@ -1,5 +1,5 @@
 import { ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Cluster, RankedItem, Weights } from '@/lib/rank';
 import { compositeScore } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
@@ -113,6 +113,24 @@ function ResultRow({
   );
 }
 
+/** Below this the judge says "not about what you asked"; such rows are folded away, not deleted. */
+export const OFF_TOPIC = 0.3;
+
+/**
+ * Entrance order within a batch: rows that appear in the same render get
+ * successive delays (capped) so a batch reads as arriving, not popping.
+ */
+function useEnterIndex() {
+  const seen = useRef(new Map<string, number>());
+  return (ids: string[]) => {
+    let i = 0;
+    for (const id of ids) {
+      if (!seen.current.has(id)) seen.current.set(id, Math.min(i++, 6));
+    }
+    return (id: string) => seen.current.get(id) ?? 0;
+  };
+}
+
 export function Results({
   clusters,
   request,
@@ -124,27 +142,52 @@ export function Results({
   weights: Weights;
   streaming: boolean;
 }) {
+  const [showOffTopic, setShowOffTopic] = useState(false);
+  const enterIndex = useEnterIndex()(clusters.map((c) => c.lead.id));
+  const onTopic = clusters.filter((c) => c.lead.relevance >= OFF_TOPIC);
+  const offTopic = clusters.filter((c) => c.lead.relevance < OFF_TOPIC);
+
   if (clusters.length === 0) {
     if (streaming) return null;
     return (
       <p className="mt-8 text-muted-foreground">
-        Nothing in this window. Try a wider one, or fewer sources.
+        Nothing found. Try a wider time range, or more sources.
       </p>
     );
   }
+
   let rank = 0;
+  const render = (list: Cluster[]) =>
+    list.map((cluster) => (
+      <li className="enter flex flex-col gap-2" key={cluster.lead.id} style={{ '--i': enterIndex(cluster.lead.id) } as React.CSSProperties}>
+        <ResultRow item={cluster.lead} rank={++rank} request={request} weights={weights} />
+        {cluster.others.map((item) => (
+          <ResultRow item={item} key={item.id} minor rank={++rank} request={request} weights={weights} />
+        ))}
+      </li>
+    ));
+
   return (
-    <ol className="mt-6 flex flex-col gap-6">
-      {clusters.map((cluster) => (
-        <li className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-1 duration-300" key={cluster.lead.id}>
-          <ResultRow item={cluster.lead} rank={++rank} request={request} weights={weights} />
-          {cluster.others.map((item) => (
-            <ResultRow item={item} key={item.id} minor rank={++rank} request={request} weights={weights} />
-          ))}
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol className="mt-6 flex flex-col gap-6">{render(onTopic)}</ol>
+      {offTopic.length > 0 && !streaming && (
+        <div className="mt-8">
+          <button
+            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            onClick={() => setShowOffTopic((v) => !v)}
+            type="button"
+          >
+            {showOffTopic ? 'Hide' : 'Show'} {offTopic.length} off-topic {offTopic.length === 1 ? 'result' : 'results'}
+          </button>
+          {showOffTopic && <ol className="mt-4 flex flex-col gap-6 opacity-70">{render(offTopic)}</ol>}
+        </div>
+      )}
+    </>
   );
+}
+
+export function offTopicCount(clusters: Cluster[]): number {
+  return clusters.filter((c) => c.lead.relevance < OFF_TOPIC).length;
 }
 
 

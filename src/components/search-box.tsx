@@ -18,13 +18,13 @@ export function SearchBox({
 
   return (
     <form
-      className="relative"
+      className="vt-searchbox relative"
       onSubmit={(event) => {
         event.preventDefault();
         const q = value.trim();
         if (!q) return;
         // A new request resets explicit filters so the judge decides again.
-        navigate({ to: '/search', search: { q } });
+        navigate({ to: '/search', search: { q }, viewTransition: true });
       }}
       role="search"
     >

@@ -1,26 +1,33 @@
-import { Badge } from '@/components/ui/badge';
-import type { IntentEvent } from '@/lib/pipeline';
-import { SOURCES, WINDOWS, type SourceId, type WindowId } from '@/lib/sources';
+import { SOURCES, WINDOWS, sourceById, type SourceId, type WindowId } from '@/lib/sources';
+import type { AskState } from '@/lib/use-ask';
 import { cn } from '@/lib/utils';
 
 const chip =
-  'rounded-full border px-3 py-1 text-sm transition-colors hover:bg-accent disabled:opacity-50';
+  'chip inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm hover:bg-accent disabled:opacity-50';
 const active = 'border-foreground bg-foreground text-background hover:bg-foreground';
 
+/**
+ * The only place that says where we are looking. Rendered from the first
+ * frame in a neutral state; when the judge has read the request the chosen
+ * chips light up, and each one shows its own progress: a breathing dot
+ * while its engines run, a count once they have reported.
+ */
 export function Filters({
-  intent,
+  state,
   explicitWindow,
   explicitSources,
   onWindow,
   onSources,
 }: {
-  intent: IntentEvent;
+  state: AskState;
   explicitWindow: WindowId | undefined;
   explicitSources: SourceId[] | undefined;
   onWindow: (w: WindowId | undefined) => void;
   onSources: (s: SourceId[] | undefined) => void;
 }) {
-  const selected = new Set(intent.sources);
+  const { intent } = state;
+  const selected = new Set(intent?.sources ?? []);
+  const ready = Boolean(intent);
 
   const toggleSource = (id: SourceId) => {
     const next = new Set(selected);
@@ -30,42 +37,49 @@ export function Filters({
     onSources([...next]);
   };
 
+  const counts = new Map<SourceId, number>();
+  for (const item of state.items) counts.set(item.source, (counts.get(item.source) ?? 0) + 1);
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {WINDOWS.map((w) => (
           <button
-            className={cn(chip, intent.window === w.id && active)}
+            className={cn(chip, ready && intent!.window === w.id && active)}
+            disabled={!ready}
             key={w.id}
-            onClick={() => onWindow(w.id === intent.window && explicitWindow ? undefined : w.id)}
+            onClick={() => onWindow(w.id === intent?.window && explicitWindow ? undefined : w.id)}
             type="button"
           >
             {w.label}
           </button>
         ))}
-        {!explicitWindow && (
-          <Badge variant="outline" className="text-muted-foreground">
-            inferred · {Math.round(intent.inferred.window.confidence * 100)}%
-          </Badge>
-        )}
+        {ready && !explicitWindow && <span className="text-xs text-muted-foreground">auto</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {SOURCES.map((s) => (
-          <button
-            className={cn(chip, selected.has(s.id) && active)}
-            key={s.id}
-            onClick={() => toggleSource(s.id)}
-            title={`${Math.round(intent.inferred.sources[s.id] * 100)}% likely wanted`}
-            type="button"
-          >
-            {s.label}
-          </button>
-        ))}
-        {!explicitSources && (
-          <Badge variant="outline" className="text-muted-foreground">
-            inferred
-          </Badge>
-        )}
+        {SOURCES.map((s) => {
+          const on = selected.has(s.id);
+          const pending = on && sourceById(s.id).lanes.some((l) => !state.lanes[`${s.id}/${l.service}`]);
+          const count = counts.get(s.id) ?? 0;
+          return (
+            <button
+              className={cn(chip, on && active)}
+              disabled={!ready}
+              key={s.id}
+              onClick={() => toggleSource(s.id)}
+              type="button"
+            >
+              {on && pending && state.phase !== 'done' && (
+                <span className="inline-block size-1.5 rounded-full bg-current opacity-70 animate-pulse" />
+              )}
+              {s.label}
+              {on && !pending && (
+                <span className="text-xs opacity-70 tabular-nums">{count}</span>
+              )}
+            </button>
+          );
+        })}
+        {ready && !explicitSources && <span className="text-xs text-muted-foreground">auto</span>}
         {explicitSources && (
           <button className="text-xs text-muted-foreground underline" onClick={() => onSources(undefined)} type="button">
             reset

@@ -131,36 +131,3 @@ export function Progress({ state }: { state: AskState }) {
     </ul>
   );
 }
-
-/**
- * Placeholders at the foot of the list, one per source still searching, so
- * the reader sees where the next rows will come from and the list only ever
- * grows into space that was already reserved.
- */
-export function PendingSources({ state }: { state: AskState }) {
-  const { intent } = state;
-  if (!intent || state.phase === 'done') return null;
-  const pending = intent.sources.filter((id) =>
-    sourceById(id).lanes.some((l) => !state.lanes[`${id}/${l.service}`])
-  );
-  if (pending.length === 0) return null;
-  return (
-    <ul className="mt-6 flex flex-col gap-4">
-      {pending.map((id) => {
-        const source = sourceById(id);
-        const waiting = source.lanes.filter((l) => !state.lanes[`${id}/${l.service}`]).map((l) => l.service);
-        return (
-          <li className="animate-in fade-in duration-300" key={id}>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-block size-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="font-medium text-foreground/70">{source.label}</span>
-              <span>· waiting for {waiting.join(', ')}</span>
-            </div>
-            <div className="mt-2 h-4 w-2/3 rounded bg-muted/70" />
-            <div className="mt-1.5 h-3 w-full rounded bg-muted/50" />
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
