@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Filters } from '@/components/filters';
-import { Results, ResultsPlaceholder } from '@/components/results';
+import { Results } from '@/components/results';
+import { Working } from '@/components/working';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder } from '@/lib/rank';
@@ -85,11 +86,8 @@ function SearchPage() {
                 onWindow={setWindow}
                 onSources={setSources}
               />
-              {state.items.length === 0 && state.phase !== 'done' ? (
-                <ResultsPlaceholder />
-              ) : (
-                <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
-              )}
+              <Working state={state} />
+              <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
             </div>
           </div>
         )}

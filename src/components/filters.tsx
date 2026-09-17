@@ -33,13 +33,9 @@ export function Filters({
   const [showMore, setShowMore] = useState(false);
   const { intent } = state;
 
-  if (!intent) {
-    return (
-      <div className="flex h-8 items-center text-sm text-muted-foreground">
-        <span className="animate-pulse">Reading your question…</span>
-      </div>
-    );
-  }
+  // Same height as the chip row so nothing jumps; the working block below
+  // already says "Reading your question…".
+  if (!intent) return <div aria-hidden className="h-8" />;
 
   const selected = new Set(intent.sources);
   const counts = new Map<SourceId, number>();
