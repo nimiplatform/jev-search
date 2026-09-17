@@ -54,9 +54,8 @@ function Home() {
             </li>
           ))}
         </ul>
-        <div className="mt-10 flex flex-col items-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-10">
           <EngineStrip />
-          <span>Eleven engines, one question</span>
         </div>
       </main>
     </>

@@ -1,7 +1,7 @@
 import { SOURCES } from '@/lib/sources';
 import { SourceIcon } from './source-icon';
 
-/** The eleven engines as a quiet row of icons. */
+/** The engines as a quiet row of icons; no count, the list changes. */
 export function EngineStrip() {
   return (
     <ul className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">

@@ -22,7 +22,7 @@ export const Route = createRootRoute({
       { title: 's1 ask' },
       {
         content:
-          "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across eleven engines, and puts the results that answer you first. No generated answers.",
+          "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across the engines, and puts the results that answer you first. No generated answers.",
         name: 'description',
       },
     ],
