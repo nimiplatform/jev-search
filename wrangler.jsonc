@@ -21,6 +21,10 @@
       }
     ]
   },
+  // Lane results cached by query, engine and window (10 min for "past day",
+  // up to 6 h for "any time"). Create with `wrangler kv namespace create CACHE`
+  // and paste the id; remove the block to run without a cache.
+  "kv_namespaces": [{ "binding": "CACHE", "id": "00000000000000000000000000000000" }],
   "analytics_engine_datasets": [
     { "binding": "FEEDBACK", "dataset": "s1_ask_feedback" }
   ],

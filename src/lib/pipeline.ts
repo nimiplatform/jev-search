@@ -1,8 +1,9 @@
+import { cachedSearch, type ResultCache } from './cache';
 import { buildCandidates } from './candidates';
 import { freshnessScore, parseAgeHours, stripAgePrefix } from './freshness';
 import { mergeItems } from './merge';
 import type { RankedItem } from './rank';
-import { search, type RawResult, type Search1ApiConfig } from './search1api';
+import { search, type RawResult, type Search1ApiConfig, type SearchParams } from './search1api';
 import {
   DEFAULT_SOURCE_IDS,
   DEFAULT_WINDOW,
@@ -90,6 +91,8 @@ const WINDOW_TOLERANCE = 1.5;
 export interface PipelineDeps {
   search1api: Search1ApiConfig;
   typesafe: TypeSafeConfig;
+  /** Optional KV-like store; lanes are cached by query, engine and window. */
+  cache?: ResultCache;
   now?: () => Date;
 }
 
@@ -108,6 +111,17 @@ export async function* askStream(
   const now = deps.now ? deps.now() : new Date();
   const request = input.request.trim();
   const candidates = buildCandidates(request);
+
+  const runSearch = (params: SearchParams) =>
+    cachedSearch(deps.cache, params, () => search(deps.search1api, params, signal));
+
+  // 0. Speculate: Google with the words as typed, fired alongside the judge.
+  //    Reused when the judge keeps those words and wants no time window,
+  //    which is most factual questions; otherwise it is simply dropped.
+  const speculative: SearchParams = { query: candidates[0]!, service: 'google', maxResults: RESULTS_PER_LANE, excludeSites: RESTRICTED_SITES };
+  const speculativePromise = input.sources && !input.sources.includes('google')
+    ? null
+    : runSearch(speculative).catch(() => null);
 
   // 1. Understand the request.
   const intent = await inferIntent(deps.typesafe, { request, candidates, now }, signal);
@@ -150,20 +164,24 @@ export async function* askStream(
   };
   const runLane = async (source: SourceId, lane: Lane): Promise<LaneEvent> => {
     const t0 = performance.now();
+    const params: SearchParams = {
+      query: lane.entityQuery ? entityQuery : query,
+      service: lane.service,
+      timeRange: lane.timeFilter === false ? undefined : win.timeRange,
+      maxResults: RESULTS_PER_LANE,
+      includeSites: lane.site ? [lane.site] : [],
+      excludeSites: !lane.site && GENERAL_ENGINES.has(lane.service) ? RESTRICTED_SITES : [],
+    };
+    const sameAsSpeculative =
+      speculativePromise !== null &&
+      params.service === speculative.service &&
+      params.query === speculative.query &&
+      params.timeRange === undefined &&
+      params.includeSites!.length === 0;
     let raw: RawResult[];
     try {
-      raw = await search(
-        deps.search1api,
-        {
-          query: lane.entityQuery ? entityQuery : query,
-          service: lane.service,
-          timeRange: lane.timeFilter === false ? undefined : win.timeRange,
-          maxResults: RESULTS_PER_LANE,
-          includeSites: lane.site ? [lane.site] : [],
-          excludeSites: !lane.site && GENERAL_ENGINES.has(lane.service) ? RESTRICTED_SITES : [],
-        },
-        signal
-      );
+      const got = sameAsSpeculative ? await speculativePromise : null;
+      raw = got ? got.results : (await runSearch(params)).results;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return {

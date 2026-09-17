@@ -48,7 +48,7 @@ export class Search1ApiError extends Error {
  * `service`. Recency is `time_range` in both cases.
  */
 /** One slow engine must not hold up the others; the stream shows what arrived. */
-export const LANE_TIMEOUT_MS = 8_000;
+export const LANE_TIMEOUT_MS = 6_000;
 
 export async function search(
   config: Search1ApiConfig,

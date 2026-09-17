@@ -12,12 +12,18 @@ interface AnalyticsEngineDataset {
   }): void;
 }
 
+interface KVLike {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
 export interface AppEnv {
   SEARCH1API_API_KEY: string;
   SEARCH1API_BASE_URL?: string;
   TYPESAFE_API_KEY: string;
   TYPESAFE_MODEL?: string;
   SEARCH_RATE_LIMIT?: RateLimiter;
+  CACHE?: KVLike;
   FEEDBACK?: AnalyticsEngineDataset;
 }
 

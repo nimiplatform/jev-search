@@ -77,7 +77,7 @@ describe('runSearch', () => {
     expect(out.sources).toEqual(['reddit']);
     expect(out.query).toBe('Bun 1.3');
 
-    const searchCalls = calls.filter((c) => c.url.endsWith('/search'));
+    const searchCalls = calls.filter((c) => c.url.endsWith('/search') && (c.body.include_sites as string[]).length > 0);
     expect(searchCalls.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
     expect(searchCalls[0]!.body).toMatchObject({
       query: 'Bun 1.3',
@@ -103,9 +103,10 @@ describe('runSearch', () => {
     );
     expect(out.window).toBe('24h');
     expect(out.sources).toEqual(['google', 'duckduckgo', 'github']);
+    // 4 lanes + 1 speculative google call (dropped: the window is 24h).
     const searches = calls.filter((c) => c.url.endsWith('/search'));
-    expect(searches).toHaveLength(4);
-    const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0);
+    expect(searches).toHaveLength(5);
+    const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0 && 'time_range' in c.body);
     const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com');
     expect(web.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
     expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com'] });
@@ -118,7 +119,7 @@ describe('runSearch', () => {
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
       { request: 'LLM agents', sources: ['arxiv'] }
     );
-    const searches = calls.filter((c) => c.url.endsWith('/search'));
+    const searches = calls.filter((c) => c.url.endsWith('/search') && c.body.search_service === 'arxiv');
     expect(searches[0]!.body).toMatchObject({ search_service: 'arxiv', include_sites: [], exclude_sites: [] });
   });
 
@@ -130,6 +131,8 @@ describe('runSearch', () => {
     );
     const searches = calls.filter((c) => c.url.endsWith('/search'));
     expect(searches.every((c) => !('time_range' in c.body))).toBe(true);
+    // Any time + words unchanged: the speculative google call is the google lane.
+    expect(searches.filter((c) => c.body.search_service === 'google')).toHaveLength(1);
     // Any time: the stale row is kept and freshness is flat.
     expect(out.items.every((i) => i.freshness === 0.5)).toBe(true);
 
@@ -140,7 +143,8 @@ describe('runSearch', () => {
     );
     const again = calls.filter((c) => c.url.endsWith('/search'));
     expect(again.filter((c) => c.body.search_service === 'imdb').every((c) => !('time_range' in c.body))).toBe(true);
-    expect(again.filter((c) => c.body.search_service === 'google').every((c) => c.body.time_range === 'week')).toBe(true);
+    // The google lane carries the window; the speculative call (no window) is dropped.
+    expect(again.filter((c) => c.body.search_service === 'google' && 'time_range' in c.body).map((c) => c.body.time_range)).toEqual(['week']);
   });
 
   it('keeps going when one source fails', async () => {
