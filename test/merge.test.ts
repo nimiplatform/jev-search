@@ -3,7 +3,7 @@ import { mergeItems } from '@/lib/merge';
 import type { RankedItem } from '@/lib/rank';
 
 function item(partial: Partial<RankedItem> & { id: string; url: string }): RankedItem {
-  return { source: 'google', title: 't', snippet: '', ageHours: null, relevance: 0.5, freshness: 0.5, position: 1, engines: ['google'], ...partial };
+  return { source: 'google', title: 't', snippet: '', ageHours: null, relevance: 0.5, ranked: true, freshness: 0.5, position: 1, engines: ['google'], ...partial };
 }
 
 describe('mergeItems', () => {

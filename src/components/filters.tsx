@@ -75,7 +75,9 @@ export function Filters({
       <div className="flex flex-wrap items-center gap-2">
         {SOURCES.map((s) => {
           const on = selected.has(s.id);
-          const pending = on && sourceById(s.id).lanes.some((l) => !state.lanes[`${s.id}/${l.service}`]);
+          const lanes = sourceById(s.id).lanes;
+          const searching = on && lanes.some((l) => !(`${s.id}/${l.service}` in state.found) && !state.lanes[`${s.id}/${l.service}`]);
+          const sorting = on && !searching && lanes.some((l) => !state.lanes[`${s.id}/${l.service}`]);
           const count = counts.get(s.id) ?? 0;
           return (
             <button
@@ -87,13 +89,18 @@ export function Filters({
               {...litProps(`s:${s.id}`)}
             >
               <SourceIcon
-                className={cn('size-3.5', on && pending && state.phase !== 'done' && 'animate-pulse')}
+                className={cn('size-3.5', searching && state.phase !== 'done' && 'animate-pulse')}
                 id={s.id}
                 on={on}
               />
               {s.label}
-              {on && !pending && (
-                <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+              {on && !searching && (
+                <span
+                  className={cn('text-xs text-muted-foreground tabular-nums transition-opacity', sorting && 'opacity-50 animate-pulse')}
+                  title={sorting ? 'Found, now sorting by how well each one answers you' : undefined}
+                >
+                  {count}
+                </span>
               )}
             </button>
           );

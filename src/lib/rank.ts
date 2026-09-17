@@ -8,8 +8,10 @@ export interface RankedItem {
   snippet: string;
   /** Hours since publication, when the snippet carried a date. */
   ageHours: number | null;
-  /** Judge's probability that the item is about what the user asked. */
+  /** Judge's probability that the item is about what the user asked. 0 until `ranked`. */
   relevance: number;
+  /** False while the engine has returned the row but the judge has not scored it yet. */
+  ranked: boolean;
   /** 0..1, newer is higher, relative to the chosen window. */
   freshness: number;
   /** Rank within its source after merging that source's lanes, 1-based. */
@@ -28,6 +30,7 @@ export type SortMode = 'best' | 'newest';
  * Newest: known age first, ties by on-topic; unknown age goes last.
  */
 export function compareItems(a: RankedItem, b: RankedItem, mode: SortMode): number {
+  if (a.ranked !== b.ranked) return a.ranked ? -1 : 1; // unranked rows wait at the bottom
   if (mode === 'newest') {
     const aa = a.ageHours ?? Number.POSITIVE_INFINITY;
     const bb = b.ageHours ?? Number.POSITIVE_INFINITY;

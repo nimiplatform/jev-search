@@ -110,6 +110,8 @@
 }
 ::view-transition-old(searchbox),
 ::view-transition-old(wordmark) { animation-name: none; opacity: 0; }
+/* Rows sliding into their ranked position. */
+::view-transition-group(*) { animation-duration: var(--dur-focal); animation-timing-function: var(--ease-in-out); }
 
 /* A result group arriving. Transition (not keyframes) so a re-render can
    retarget it; @starting-style supplies the from-state. */

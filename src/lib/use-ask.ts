@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { mergeItems } from './merge';
 import type { AskEvent, IntentEvent, LaneEvent } from './pipeline';
 import type { RankedItem } from './rank';
@@ -7,22 +8,59 @@ import type { SourceId, WindowId } from './sources';
 export interface AskState {
   phase: 'idle' | 'understanding' | 'searching' | 'done' | 'error';
   intent: IntentEvent | null;
-  /** Lanes folded by URL as they arrive. */
+  /** Lanes folded by URL as they arrive; unranked rows carry `ranked: false`. */
   items: RankedItem[];
-  /** Every finished lane, keyed `${source}/${engine}`. */
+  /** Lanes whose engine has answered (rows may still be unscored), keyed `${source}/${engine}`. */
+  found: Record<string, number>;
+  /** Every scored lane, keyed `${source}/${engine}`. */
   lanes: Record<string, LaneEvent>;
   totalMs: number | null;
   message: string | null;
 }
 
+type Incoming = AskEvent | { type: 'error'; message: string };
+
 const IDLE: AskState = {
   phase: 'idle',
   intent: null,
   items: [],
+  found: {},
   lanes: {},
   totalMs: null,
   message: null,
 };
+
+function reduce(s: AskState, event: Incoming): AskState {
+  switch (event.type) {
+    case 'intent':
+      return { ...s, phase: 'searching', intent: event };
+    case 'found':
+      return {
+        ...s,
+        items: mergeItems(s.items, event.items),
+        found: { ...s.found, [`${event.source}/${event.engine}`]: event.items.length },
+      };
+    case 'lane':
+      return {
+        ...s,
+        items: mergeItems(s.items, event.items),
+        found: { ...s.found, [`${event.source}/${event.engine}`]: event.items.length },
+        lanes: { ...s.lanes, [`${event.source}/${event.engine}`]: event },
+      };
+    case 'done':
+      return { ...s, phase: 'done', totalMs: event.totalMs };
+    case 'error':
+      return { ...s, phase: 'error', message: event.message };
+  }
+}
+
+function canViewTransition(): boolean {
+  return (
+    typeof document !== 'undefined' &&
+    'startViewTransition' in document &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
 
 /** Consume POST /api/ask as it streams, one JSON event per line. */
 export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
@@ -37,6 +75,17 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
     const controller = new AbortController();
     setState({ ...IDLE, phase: 'understanding' });
 
+    const apply = (event: Incoming) => {
+      // Scored rows move into place: let the browser animate the reorder.
+      if (event.type === 'lane' && canViewTransition()) {
+        document.startViewTransition(() => {
+          flushSync(() => setState((s) => reduce(s, event)));
+        });
+        return;
+      }
+      setState((s) => reduce(s, event));
+    };
+
     (async () => {
       let response: Response;
       try {
@@ -48,12 +97,12 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
         });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setState((s) => ({ ...s, phase: 'error', message: (error as Error).message }));
+        apply({ type: 'error', message: (error as Error).message });
         return;
       }
       if (!response.ok || !response.body) {
         const body = (await response.json().catch(() => ({}))) as { error?: string };
-        setState((s) => ({ ...s, phase: 'error', message: body.error ?? `HTTP ${response.status}` }));
+        apply({ type: 'error', message: body.error ?? `HTTP ${response.status}` });
         return;
       }
 
@@ -62,23 +111,7 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
       let buffer = '';
       const handle = (line: string) => {
         if (!line.trim()) return;
-        const event = JSON.parse(line) as AskEvent | { type: 'error'; message: string };
-        setState((s) => {
-          switch (event.type) {
-            case 'intent':
-              return { ...s, phase: 'searching', intent: event };
-            case 'lane':
-              return {
-                ...s,
-                items: mergeItems(s.items, event.items),
-                lanes: { ...s.lanes, [`${event.source}/${event.engine}`]: event },
-              };
-            case 'done':
-              return { ...s, phase: 'done', totalMs: event.totalMs };
-            case 'error':
-              return { ...s, phase: 'error', message: event.message };
-          }
-        });
+        apply(JSON.parse(line) as Incoming);
       };
       try {
         for (;;) {
@@ -92,7 +125,7 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
         if (buffer) handle(buffer);
       } catch (error) {
         if (controller.signal.aborted) return;
-        setState((s) => ({ ...s, phase: 'error', message: (error as Error).message }));
+        apply({ type: 'error', message: (error as Error).message });
       }
     })();
 

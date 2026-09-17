@@ -9,6 +9,7 @@ function item(partial: Partial<RankedItem> & { id: string }): RankedItem {
     snippet: '',
     ageHours: null,
     relevance: 0.5,
+    ranked: true,
     freshness: 0.5,
     position: 1,
     engines: ['google'],

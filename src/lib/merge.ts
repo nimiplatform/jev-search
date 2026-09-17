@@ -26,6 +26,7 @@ export function mergeItems(existing: RankedItem[], incoming: RankedItem[]): Rank
       ...found,
       engines: [...new Set([...found.engines, ...item.engines])],
       relevance: Math.max(found.relevance, item.relevance),
+      ranked: found.ranked || item.ranked,
       position: Math.min(found.position, item.position),
       ageHours: found.ageHours ?? item.ageHours,
       freshness: Math.max(found.freshness, item.freshness),

@@ -50,6 +50,15 @@ export interface IntentEvent {
   intentMs: number;
 }
 
+/** An engine has answered; its rows are on the page unscored while the judge works. */
+export interface FoundEvent {
+  type: 'found';
+  source: SourceId;
+  engine: string;
+  items: RankedItem[];
+  searchMs: number;
+}
+
 export interface LaneEvent {
   type: 'lane';
   source: SourceId;
@@ -71,7 +80,7 @@ export interface DoneEvent {
   tokens: number;
 }
 
-export type AskEvent = IntentEvent | LaneEvent | DoneEvent;
+export type AskEvent = IntentEvent | FoundEvent | LaneEvent | DoneEvent;
 
 const SOURCE_PROB_THRESHOLD = 0.6;
 const RESULTS_PER_LANE = 8;
@@ -130,7 +139,15 @@ export async function* askStream(
     intentMs,
   };
 
-  // 2. Every lane searches, filters by age, and gets scored on its own.
+  // 2. Every lane searches, filters by age, and gets scored on its own. The
+  //    'found' event goes out between the two steps so the page can show the
+  //    rows before they are ordered.
+  const found: FoundEvent[] = [];
+  let wake: (() => void) | null = null;
+  const announce = (event: FoundEvent) => {
+    found.push(event);
+    wake?.();
+  };
   const runLane = async (source: SourceId, lane: Lane): Promise<LaneEvent> => {
     const t0 = performance.now();
     let raw: RawResult[];
@@ -178,11 +195,15 @@ export async function* askStream(
         snippet: stripAgePrefix(row.snippet),
         ageHours,
         relevance: 0,
+        ranked: false,
         freshness: freshnessScore(ageHours, win.hours),
         position: index + 1,
         engines: [lane.service],
       });
     });
+    if (items.length > 0) {
+      announce({ type: 'found', source, engine: lane.service, items: items.map((it) => ({ ...it })), searchMs });
+    }
 
     // 3. Judge relevance of this lane's rows against the original request.
     const t1 = performance.now();
@@ -196,7 +217,10 @@ export async function* askStream(
           signal
         );
         tokens += scored.usage.input_tokens;
-        for (const item of items) item.relevance = scored.relevance[item.id] ?? 0;
+        for (const item of items) {
+          item.relevance = scored.relevance[item.id] ?? 0;
+          item.ranked = true;
+        }
       } catch (err) {
         error = `typesafe: ${err instanceof Error ? err.message : String(err)}`;
       }
@@ -221,9 +245,18 @@ export async function* askStream(
     }
   }
   while (inFlight.size > 0) {
-    const { key, event } = await Promise.race(inFlight.values());
-    inFlight.delete(key);
-    yield event;
+    // Wake on whichever comes first: an engine answering, or a lane fully scored.
+    const wakeup = new Promise<void>((resolve) => {
+      wake = resolve;
+    });
+    const next = await Promise.race([Promise.race(inFlight.values()), wakeup]);
+    wake = null;
+    while (found.length > 0) yield found.shift()!;
+    if (next) {
+      const { key, event } = next;
+      inFlight.delete(key);
+      yield event;
+    }
   }
 
   yield { type: 'done', totalMs: Math.round(performance.now() - started), tokens };
@@ -255,6 +288,7 @@ export async function runSearch(
   let tokens = 0;
   for await (const event of askStream(deps, input, signal)) {
     if (event.type === 'intent') intent = event;
+    else if (event.type === 'found') continue;
     else if (event.type === 'lane') {
       lanes.push(event);
       items = mergeItems(items, event.items);

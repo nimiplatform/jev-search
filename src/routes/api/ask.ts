@@ -74,7 +74,7 @@ export const Route = createFileRoute('/api/ask')({
                   intentLine = [event.query, event.window, event.sources.join(',')];
                 } else if (event.type === 'lane') {
                   count += event.items.length;
-                } else {
+                } else if (event.type === 'done') {
                   env.FEEDBACK?.writeDataPoint({
                     indexes: ['ask'],
                     blobs: ['ask', data.q, ...intentLine, data.w ? 'user' : 'inferred', data.s ? 'user' : 'inferred'],
