@@ -1,5 +1,4 @@
 import { SOURCES, WINDOWS, sourceById, type SourceId, type WindowId } from '@/lib/sources';
-import { QueryChip } from './query-chip';
 import { SourceIcon } from './source-icon';
 import type { AskState } from '@/lib/use-ask';
 import { cn } from '@/lib/utils';
@@ -47,8 +46,6 @@ export function Filters({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <QueryChip query={intent?.query ?? null} ready={ready} w={explicitWindow} s={explicitSources} />
-        <span className="text-muted-foreground/40">·</span>
         {WINDOWS.map((w) => (
           <button
             className={cn(chip, ready && intent!.window === w.id && active)}

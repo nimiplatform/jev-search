@@ -79,6 +79,7 @@ function SearchPage() {
         {params.q.trim() && state.phase !== 'error' && (
           <div className="max-w-3xl">
             <div className="min-w-0">
+              <Steps state={state} />
               <Filters
                 state={state}
                 explicitWindow={params.w}
@@ -86,7 +87,6 @@ function SearchPage() {
                 onWindow={setWindow}
                 onSources={setSources}
               />
-              <Steps state={state} />
               {state.items.length === 0 && state.phase !== 'done' ? (
                 <ResultsPlaceholder />
               ) : (

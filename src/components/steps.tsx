@@ -85,7 +85,7 @@ export function Steps({ state }: { state: AskState }) {
   return (
     <ol
       className={cn(
-        'mt-4 flex flex-col gap-1.5 text-sm transition-opacity duration-500',
+        'mb-4 flex flex-col gap-1.5 text-sm transition-opacity duration-500',
         state.phase === 'done' && 'opacity-0'
       )}
     >
