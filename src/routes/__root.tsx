@@ -4,7 +4,12 @@ import appCss from '../styles.css?url';
 
 export const Route = createRootRoute({
   head: () => ({
-    links: [{ href: appCss, rel: 'stylesheet' }],
+    links: [
+      { href: appCss, rel: 'stylesheet' },
+      { href: '/favicon.svg', rel: 'icon', type: 'image/svg+xml' },
+      { href: '/favicon.ico', rel: 'icon', sizes: '32x32' },
+      { href: '/apple-touch-icon.png', rel: 'apple-touch-icon' },
+    ],
     meta: [
       { charSet: 'utf-8' },
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },

@@ -1,4 +1,3 @@
-import { ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
@@ -40,7 +39,6 @@ function ResultRow({
   request: string;
   minor?: boolean;
 }) {
-  const [vote, setVote] = useState<'useful' | 'irrelevant' | null>(null);
   const age = formatAge(item.ageHours);
   const base = { request, url: item.url, source: item.source, relevance: item.relevance, rank };
 
@@ -83,30 +81,6 @@ function ResultRow({
             )}
           />
           {Math.round(item.relevance * 100)}% on topic
-        </span>
-        <span className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <button
-            aria-label="Useful"
-            className={cn('rounded p-1 hover:bg-accent', vote === 'useful' && 'text-emerald-600 opacity-100')}
-            onClick={() => {
-              setVote('useful');
-              send({ kind: 'useful', ...base });
-            }}
-            type="button"
-          >
-            <ThumbsUpIcon className="size-3.5" />
-          </button>
-          <button
-            aria-label="Not relevant"
-            className={cn('rounded p-1 hover:bg-accent', vote === 'irrelevant' && 'text-destructive opacity-100')}
-            onClick={() => {
-              setVote('irrelevant');
-              send({ kind: 'irrelevant', ...base });
-            }}
-            type="button"
-          >
-            <ThumbsDownIcon className="size-3.5" />
-          </button>
         </span>
       </div>
     </article>
