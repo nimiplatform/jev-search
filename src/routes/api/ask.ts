@@ -72,7 +72,7 @@ export const Route = createFileRoute('/api/ask')({
                 send(event);
                 if (event.type === 'intent') {
                   intentLine = [event.query, event.window, event.sources.join(',')];
-                } else if (event.type === 'source') {
+                } else if (event.type === 'lane') {
                   count += event.items.length;
                 } else {
                   env.FEEDBACK?.writeDataPoint({

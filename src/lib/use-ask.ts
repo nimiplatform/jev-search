@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import type { AskEvent, IntentEvent, LaneError } from './pipeline';
+import { mergeItems } from './merge';
+import type { AskEvent, IntentEvent, LaneEvent } from './pipeline';
 import type { RankedItem } from './rank';
 import type { SourceId, WindowId } from './sources';
-
-export type SourceStatus = 'pending' | 'done';
 
 export interface AskState {
   phase: 'idle' | 'understanding' | 'searching' | 'done' | 'error';
   intent: IntentEvent | null;
+  /** Lanes folded by URL as they arrive. */
   items: RankedItem[];
-  status: Partial<Record<SourceId, SourceStatus>>;
-  errors: LaneError[];
+  /** Every finished lane, keyed `${source}/${engine}`. */
+  lanes: Record<string, LaneEvent>;
   totalMs: number | null;
   message: string | null;
 }
@@ -19,8 +19,7 @@ const IDLE: AskState = {
   phase: 'idle',
   intent: null,
   items: [],
-  status: {},
-  errors: [],
+  lanes: {},
   totalMs: null,
   message: null,
 };
@@ -66,17 +65,13 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
         const event = JSON.parse(line) as AskEvent | { type: 'error'; message: string };
         setState((s) => {
           switch (event.type) {
-            case 'intent': {
-              const status: AskState['status'] = {};
-              for (const id of event.sources) status[id] = 'pending';
-              return { ...s, phase: 'searching', intent: event, status };
-            }
-            case 'source':
+            case 'intent':
+              return { ...s, phase: 'searching', intent: event };
+            case 'lane':
               return {
                 ...s,
-                items: [...s.items, ...event.items],
-                status: { ...s.status, [event.source]: 'done' },
-                errors: [...s.errors, ...event.errors],
+                items: mergeItems(s.items, event.items),
+                lanes: { ...s.lanes, [`${event.source}/${event.engine}`]: event },
               };
             case 'done':
               return { ...s, phase: 'done', totalMs: event.totalMs };

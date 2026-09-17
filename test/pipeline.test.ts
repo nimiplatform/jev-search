@@ -85,12 +85,14 @@ describe('runSearch', () => {
       include_sites: ['reddit.com'],
     });
 
-    // Lanes fused: the shared URL is one row with both engines; the stale
-    // duckduckgo row (Oct 2025) is outside the window and dropped.
+    // Lanes folded by URL: the shared URL is one row with both engines; the
+    // stale duckduckgo row (Oct 2025) is outside the window and dropped.
     expect(out.items).toHaveLength(2);
-    expect(out.items[0]).toMatchObject({ id: 'reddit:1', relevance: 0.95, ageHours: 72, snippet: 'runtime', engines: ['google', 'duckduckgo'] });
-    expect(out.items[1]).toMatchObject({ id: 'reddit:2', relevance: 0.05, ageHours: 24, engines: ['google'] });
-    expect(out.tokens).toBe(200);
+    expect(out.items[0]).toMatchObject({ relevance: 0.95, ageHours: 72, snippet: 'runtime' });
+    expect(out.items[0]!.engines.sort()).toEqual(['duckduckgo', 'google']);
+    expect(out.items[1]).toMatchObject({ relevance: 0.05, ageHours: 24, engines: ['google'] });
+    expect(out.lanes.find((l) => l.engine === 'duckduckgo')).toMatchObject({ stale: 1 });
+    expect(out.tokens).toBe(300);
   });
 
   it('respects explicit window and sources and excludes restricted sites for web', async () => {
@@ -155,10 +157,8 @@ describe('runSearch', () => {
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
       { request: 'Bun 1.3', sources: ['reddit', 'github'] }
     );
-    expect(out.errors).toEqual([
-      { source: 'github', engine: 'google', message: 'upstream broke' },
-      { source: 'github', engine: 'duckduckgo', message: 'upstream broke' },
-    ]);
+    expect(out.errors.map((e) => e.engine).sort()).toEqual(['duckduckgo', 'google']);
+    expect(out.errors.every((e) => e.source === 'github' && e.message === 'upstream broke')).toBe(true);
     expect(out.totalMs).toBeGreaterThanOrEqual(0);
     expect(out.items.map((i) => i.source)).toEqual(['reddit', 'reddit']);
   });

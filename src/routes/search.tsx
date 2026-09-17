@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
-import { Progress } from '@/components/progress';
+import { Progress, Understanding } from '@/components/progress';
 import { Results, ResultsSkeleton } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Weights } from '@/components/weights';
@@ -88,19 +88,13 @@ function SearchPage() {
                   onSources={setSources}
                 />
               ) : null}
-              <div className="mt-3">
+              <div className="mt-3 flex flex-col gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                {state.intent && <Understanding intent={state.intent} />}
                 <Progress state={state} />
               </div>
-              {state.intent && (
+              {state.phase === 'done' && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Searching for <span className="font-medium text-foreground">“{state.intent.query}”</span>
-                  {state.intent.query !== state.intent.request && ' (rewritten from your request)'}
-                  {state.phase === 'done' && ` · ${state.items.length} results in ${clusters.length} groups`}
-                </p>
-              )}
-              {state.errors.length > 0 && (
-                <p className="mt-2 text-xs text-destructive">
-                  {state.errors.map((e) => `${e.source}/${e.engine}: ${e.message}`).join(' · ')}
+                  {state.items.length} results in {clusters.length} groups
                 </p>
               )}
               {state.items.length === 0 && state.phase !== 'done' ? (
