@@ -19,7 +19,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },
-      { title: 's1 ask' },
+      { title: 's1 ask — Jev for Search' },
       {
         content:
           "Ask the web, ranked by Jev. TypeSafe's Jev reads your question, picks where to look across the engines, and puts the results that answer you first. No generated answers.",
@@ -55,11 +55,11 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2">
             <span>
               Understanding and ranking by{' '}
-              <a className="underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
+              <a className="text-foreground/80 hover:underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
                 Jev, TypeSafe's judgment model
               </a>
               {' · '}engines via{' '}
-              <a className="underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
+              <a className="text-foreground/80 hover:underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
                 Search1API
               </a>
               {' · '}no generated answers{' · '}your query is sent to both

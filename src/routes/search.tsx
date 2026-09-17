@@ -31,7 +31,7 @@ export const Route = createFileRoute('/search')({
     return out;
   },
   head: ({ match }) => ({
-    meta: [{ title: match.search.q ? `${match.search.q} · s1 ask` : 's1 ask' }],
+    meta: [{ title: match.search.q ? `${match.search.q} · s1 ask` : 's1 ask — Jev for Search' }],
   }),
   component: SearchPage,
 });

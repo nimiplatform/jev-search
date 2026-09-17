@@ -18,16 +18,8 @@ const EXAMPLES = [
 function Home() {
   return (
     <>
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
+      <header className="mx-auto flex w-full max-w-6xl items-center px-4 py-3">
         <Wordmark size="sm" />
-        <a
-          className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          href="https://typesafe.ai"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Jev for Search
-        </a>
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 pb-24">
