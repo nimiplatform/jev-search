@@ -55,7 +55,7 @@ function sourceLines(state: AskState): Line[] {
 function Mark({ state }: { state: Line['state'] }) {
   if (state === 'done') {
     return (
-      <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/80 text-background">
+      <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
         <CheckIcon className="size-2.5" strokeWidth={3} />
       </span>
     );
@@ -117,7 +117,7 @@ export function Working({ state }: { state: AskState }) {
         type="button"
       >
         {state.phase === 'done' ? (
-          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/80 text-background">
+          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
             <CheckIcon className="size-2.5" strokeWidth={3} />
           </span>
         ) : (
