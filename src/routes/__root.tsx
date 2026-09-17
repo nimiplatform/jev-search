@@ -50,7 +50,7 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="min-h-dvh flex flex-col">
-        <div className="flex-1">{children}</div>
+        <div className="flex flex-1 flex-col">{children}</div>
         <footer className="border-t px-4 py-4 text-xs text-muted-foreground">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2">
             <span>

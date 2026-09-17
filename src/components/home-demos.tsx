@@ -2,87 +2,80 @@ import { SOURCES, type SourceId } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 import { SourceIcon } from './source-icon';
 
-const chip = 'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm';
-const on = 'border-foreground/50 bg-accent/60 text-foreground';
-const off = 'text-muted-foreground/70';
+const chip = 'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[13px]';
+const on = 'border-foreground/50 bg-background text-foreground';
 
-/** A question and what Jev chose for it, drawn with the real chip styles. */
-function Picked({ question, window, sources }: { question: string; window: string; sources: SourceId[] }) {
-  const chosen = SOURCES.filter((s) => sources.includes(s.id));
-  const rest = SOURCES.filter((s) => !sources.includes(s.id));
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="text-base text-foreground">“{question}”</p>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={cn(chip, on)}>{window}</span>
-        <span className="text-muted-foreground/40">·</span>
-        {chosen.map((s) => (
-          <span className={cn(chip, on)} key={s.id}>
-            <SourceIcon className="size-3.5" id={s.id} on />
-            {s.label}
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-1">
-        {rest.map((s) => (
-          <span className={cn('inline-flex items-center gap-1 text-xs', off)} key={s.id}>
-            <SourceIcon className="size-3" id={s.id} on={false} />
-            {s.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
+const PICKED: SourceId[] = ['hackernews', 'reddit', 'x'];
 
-export function DemoPicks() {
-  return (
-    <div className="flex flex-col gap-8">
-      <Picked question="what are people saying about Bun 1.3 this week" window="Past week" sources={['hackernews', 'reddit', 'x']} />
-      <Picked question="who directed Oppenheimer and who is in it" window="Any time" sources={['google', 'wikipedia', 'imdb']} />
-    </div>
-  );
-}
-
-const ROWS: { source: SourceId; host: string; title: string; snippet: string; score: number }[] = [
-  { source: 'google', host: 'bun.com/blog/bun-v1.3', title: 'Bun 1.3 | Bun Blog', snippet: 'Bun 1.3 introduces zero-config frontend development, unified SQL API, built-in Redis client, security enhancements…', score: 0.96 },
-  { source: 'reddit', host: 'reddit.com/r/bun', title: 'Should I move away from Bun?', snippet: '…1.3.3, 1.3.14, the canary and node 26, and it asks anyone still seeing growth to file separately so each cause is tracked…', score: 0.91 },
-  { source: 'x', host: 'x.com/jarredsumner', title: 'Jarred Sumner on X: “In the next version of Bun `Bun.FetchSession`…”', snippet: 'gives you a `fetch` function with its own keepalive…', score: 0.88 },
+const ROWS: { source: SourceId; host: string; title: string; score: number }[] = [
+  { source: 'x', host: 'x.com/jarredsumner', title: 'In the next version of Bun, `Bun.FetchSession` gives you a fetch with its own keepalive…', score: 0.96 },
+  { source: 'hackernews', host: 'news.ycombinator.com', title: 'I made a build visualizer to understand Bun’s compile times', score: 0.92 },
+  { source: 'reddit', host: 'reddit.com/r/bun', title: 'Should I move away from Bun?', score: 0.89 },
 ];
+const FOLDED = { source: 'reddit' as SourceId, host: 'reddit.com/r/hair', title: 'How do you keep a low bun from sagging?', score: 0.04 };
 
-const OFF_ROW = { source: 'reddit' as SourceId, host: 'reddit.com/r/hair', title: 'How do you keep a low bun from sagging?', snippet: 'Bobby pins, a little texture spray, and…', score: 0.04 };
-
-function Row({ row, dim }: { row: (typeof ROWS)[number]; dim?: boolean }) {
+function Row({ row, dim }: { row: typeof FOLDED; dim?: boolean }) {
   return (
-    <div className={cn('flex flex-col gap-0.5', dim && 'opacity-60')}>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <SourceIcon className="size-3.5" id={row.source} />
+    <div className={cn('flex flex-col gap-0.5', dim && 'opacity-55')}>
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <SourceIcon className="size-3" id={row.source} />
         <span className="truncate">{row.host}</span>
       </div>
-      <p className="text-base text-link">{row.title}</p>
-      <p className="text-sm text-muted-foreground line-clamp-1">{row.snippet}</p>
-      <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
-        <span
-          className={cn(
-            'inline-block size-2 rounded-full',
-            row.score >= 0.7 ? 'bg-emerald-500' : row.score >= 0.4 ? 'bg-amber-500' : 'bg-neutral-400'
-          )}
-        />
+      <p className="text-[15px] leading-snug text-link line-clamp-1">{row.title}</p>
+      <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <span className={cn('inline-block size-1.5 rounded-full', row.score >= 0.7 ? 'bg-emerald-500' : 'bg-neutral-400')} />
         {Math.round(row.score * 100)}% on topic
       </p>
     </div>
   );
 }
 
-export function DemoRanks() {
+function Label({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-medium text-primary">{children}</p>;
+}
+
+/**
+ * One question, and both things Jev did with it, in a panel that fits
+ * beside the search box: the engines it lit, then the order it produced.
+ */
+export function DemoPanel() {
+  const chosen = SOURCES.filter((s) => PICKED.includes(s.id));
+  const rest = SOURCES.filter((s) => !PICKED.includes(s.id));
   return (
-    <div className="flex flex-col gap-5">
-      {ROWS.map((row) => (
-        <Row key={row.title} row={row} />
-      ))}
+    <div className="flex flex-col gap-5 rounded-2xl border bg-muted/40 p-5">
+      <p className="text-[15px] text-foreground">“what are people saying about Bun 1.3 this week”</p>
+
+      <div className="flex flex-col gap-2">
+        <Label>Jev picked where to look</Label>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={cn(chip, on)}>Past week</span>
+          <span className="text-muted-foreground/40">·</span>
+          {chosen.map((s) => (
+            <span className={cn(chip, on)} key={s.id}>
+              <SourceIcon className="size-3.5" id={s.id} on />
+              {s.label}
+            </span>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          {rest.map((s) => (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/60" key={s.id}>
+              <SourceIcon className="size-3" id={s.id} on={false} />
+              {s.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-3 border-t pt-4">
-        <p className="text-sm text-muted-foreground">Show 7 more that didn't seem to match</p>
-        <Row row={OFF_ROW} dim />
+        <Label>Jev ranked what came back</Label>
+        {ROWS.map((row) => (
+          <Row key={row.host} row={row} />
+        ))}
+        <div className="flex flex-col gap-2 border-t pt-3">
+          <p className="text-xs text-muted-foreground">7 more that didn't seem to match</p>
+          <Row dim row={FOLDED} />
+        </div>
       </div>
     </div>
   );
@@ -90,11 +83,10 @@ export function DemoRanks() {
 
 export function EngineStrip() {
   return (
-    <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+    <ul className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       {SOURCES.map((s) => (
-        <li className="inline-flex items-center gap-1.5 text-sm text-muted-foreground" key={s.id}>
-          <SourceIcon className="size-4" id={s.id} on />
-          {s.label}
+        <li className="inline-flex items-center gap-1 text-xs text-muted-foreground" key={s.id} title={s.label}>
+          <SourceIcon className="size-3.5" id={s.id} on />
         </li>
       ))}
     </ul>

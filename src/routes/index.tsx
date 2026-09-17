@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { DemoPicks, DemoRanks, EngineStrip } from '@/components/home-demos';
+import { DemoPanel, EngineStrip } from '@/components/home-demos';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
 
@@ -11,15 +11,14 @@ const EXAMPLES = [
   'what are people saying about Bun 1.3 this week',
   'who directed Oppenheimer and who is in it',
   'new papers on LLM agents',
-  'reddit threads about self-hosting Postgres',
 ];
 
-/* design-structure: macrostructure=workbench · hero=form-as-CTA · features=annotated-fragments (caption column + live-styled UI) · footer=Ft2 */
+/* design-structure: one screen · hero=H2 split diptych (copy + form left, live-styled product fragment right) · footer=Ft2 */
 
 function Home() {
   return (
     <>
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
         <Wordmark size="sm" />
         <a
           className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -31,20 +30,20 @@ function Home() {
         </a>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4">
-        <section className="flex min-h-[62dvh] flex-col justify-center py-16">
-          <h1 className="display max-w-3xl text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.02] tracking-[-0.01em] text-foreground">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-4 pb-12 pt-6 md:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] md:gap-16 md:pb-16">
+        <section>
+          <h1 className="display text-[clamp(2.4rem,5.2vw,4rem)] leading-[1.04] tracking-[-0.01em]">
             Ask the web.
             <br />
             Ranked by <span className="text-primary">Jev</span>.
           </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+          <p className="mt-5 max-w-md text-lg text-muted-foreground">
             Jev picks where to look and puts the results that answer you first.
           </p>
-          <div className="mt-8 max-w-2xl">
+          <div className="mt-7 max-w-xl">
             <SearchBox autoFocus />
           </div>
-          <ul className="mt-4 flex max-w-2xl flex-wrap gap-2 text-sm">
+          <ul className="mt-3 flex max-w-xl flex-wrap gap-2 text-sm">
             {EXAMPLES.map((q) => (
               <li key={q}>
                 <Link
@@ -58,43 +57,15 @@ function Home() {
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="grid gap-8 border-t py-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16">
-          <div className="max-w-sm">
-            <h2 className="text-2xl font-semibold tracking-tight">Jev picks where to look</h2>
-            <p className="mt-3 text-muted-foreground">
-              Eleven engines, one question. Jev reads it and decides which of them will actually have the answer, and how far back to look.
-            </p>
-          </div>
-          <div className="rounded-xl bg-muted/40 p-6">
-            <DemoPicks />
-          </div>
-        </section>
-
-        <section className="grid gap-8 border-t py-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16">
-          <div className="max-w-sm">
-            <h2 className="text-2xl font-semibold tracking-tight">Jev ranks what comes back</h2>
-            <p className="mt-3 text-muted-foreground">
-              Every result is judged on one thing: does it answer you. That number is the order. Keyword look-alikes go to the bottom, not the top.
-            </p>
-          </div>
-          <div className="rounded-xl bg-muted/40 p-6">
-            <DemoRanks />
-          </div>
-        </section>
-
-        <section className="grid gap-8 border-t py-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-16">
-          <div className="max-w-sm">
-            <h2 className="text-2xl font-semibold tracking-tight">Eleven engines behind one box</h2>
-            <p className="mt-3 text-muted-foreground">
-              The open web, the places people talk, and the catalogues that know one thing well. Via Search1API.
-            </p>
-          </div>
-          <div className="flex items-center">
+          <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>Eleven engines</span>
             <EngineStrip />
           </div>
         </section>
+
+        <aside className="hidden md:block">
+          <DemoPanel />
+        </aside>
       </main>
     </>
   );
