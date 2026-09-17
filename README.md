@@ -1,5 +1,7 @@
 # Jev Search
 
+[![Jev Search homepage](public/og-home.png)](https://jev.s1.dev)
+
 Search the web in plain language. [TypeSafe's Jev](https://typesafe.ai) chooses sources, time ranges and search terms, then ranks the results returned through [Search1API](https://www.search1api.com). You get links and snippets, with visible relevance scores and editable filters. No generated answers.
 
 **[Try Jev Search](https://jev.s1.dev)**
