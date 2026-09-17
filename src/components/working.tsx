@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronRightIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { OFF_TOPIC } from './results';
 import { sourceById, windowById, type SourceId } from '@/lib/sources';
@@ -112,12 +112,24 @@ export function Working({ state }: { state: AskState }) {
   return (
     <section className="mt-4 text-sm">
       <button
-        className="flex w-full items-center gap-2 text-left text-muted-foreground hover:text-foreground"
+        className="group flex w-full items-center gap-2 text-left text-muted-foreground hover:text-foreground"
         onClick={() => setOpen((v) => !v)}
         type="button"
       >
-        <ChevronRightIcon className={cn('size-3.5 shrink-0 transition-transform duration-200', open && 'rotate-90')} />
-        <span className={cn(!intent && 'animate-pulse')}>{summary}</span>
+        {state.phase === 'done' ? (
+          <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/80 text-background">
+            <CheckIcon className="size-2.5" strokeWidth={3} />
+          </span>
+        ) : (
+          <LoaderCircleIcon className="size-4 shrink-0 animate-spin text-primary" />
+        )}
+        <span>{summary}</span>
+        <ChevronDownIcon
+          className={cn(
+            'ml-1 size-3.5 shrink-0 opacity-40 transition-transform duration-200 group-hover:opacity-80',
+            open && 'rotate-180'
+          )}
+        />
       </button>
 
       <div className="fold" data-open={open ? '' : undefined}>
