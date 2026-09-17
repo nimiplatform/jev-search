@@ -1,14 +1,10 @@
-import { sourceById } from '@/lib/sources';
 import type { AskState } from '@/lib/use-ask';
 
-function list(names: string[]): string {
-  if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-}
-
 /**
- * One plain sentence about what is happening, written for the person who
- * typed the request.
+ * Says something only when there is something to say: that the judge sent
+ * a different query than the words typed, or that off-topic rows were
+ * folded away. Counts live on the chips; "still searching" is the chips'
+ * breathing dots. Before the request has been read there is one line.
  */
 export function Status({
   state,
@@ -23,37 +19,39 @@ export function Status({
   onSort: (s: 'best' | 'newest') => void;
 }) {
   const { intent } = state;
-  let text: React.ReactNode;
+  const parts: React.ReactNode[] = [];
+
   if (!intent) {
-    text = <span className="animate-pulse">Reading your request…</span>;
+    parts.push(<span className="animate-pulse" key="reading">Reading your request…</span>);
   } else {
-    const query = <span className="font-medium text-foreground">“{intent.query}”</span>;
-    const pending = intent.sources.filter((id) =>
-      sourceById(id).lanes.some((l) => !state.lanes[`${id}/${l.service}`])
-    );
-    if (state.phase === 'done') {
-      text = (
-        <>
-          {state.items.length} results for {query}
-          {hiddenOffTopic > 0 && ` · ${hiddenOffTopic} off-topic hidden below`}
-        </>
-      );
-    } else {
-      text = (
-        <>
-          Looking for {query} on {list(intent.sources.map((id) => sourceById(id).label))}
-          {pending.length > 0 && pending.length < intent.sources.length && (
-            <span className="text-muted-foreground/70"> · still checking {list(pending.map((id) => sourceById(id).label))}</span>
-          )}
-          …
-        </>
+    const rewritten = intent.query.trim().toLowerCase() !== intent.request.trim().toLowerCase();
+    if (rewritten) {
+      parts.push(
+        <span key="query">
+          {state.phase === 'done' ? 'Searched for' : 'Searching for'}{' '}
+          <span className="font-medium text-foreground">“{intent.query}”</span>
+        </span>
       );
     }
+    if (state.phase === 'done' && hiddenOffTopic > 0) {
+      parts.push(<span key="hidden">{hiddenOffTopic} off-topic hidden below</span>);
+    }
   }
+
+  const showSort = Boolean(intent && sort);
+  if (parts.length === 0 && !showSort) return null;
+
   return (
     <div className="flex items-baseline justify-between gap-4 text-sm text-muted-foreground">
-      <p>{text}</p>
-      {intent && sort && (
+      <p className="enter">
+        {parts.map((p, i) => (
+          <span key={i}>
+            {i > 0 && <span className="mx-1.5 text-muted-foreground/50">·</span>}
+            {p}
+          </span>
+        ))}
+      </p>
+      {showSort && (
         <span className="ml-auto shrink-0 text-xs">
           {(['best', 'newest'] as const).map((s, i) => (
             <button
