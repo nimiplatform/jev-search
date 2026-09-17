@@ -24,10 +24,18 @@ export interface Weights {
   position: number;
 }
 
+/** Best match: what the judge thinks first, then recency, then the engines' own order. */
 export const DEFAULT_WEIGHTS: Weights = {
   relevance: 0.6,
   freshness: 0.3,
   position: 0.1,
+};
+
+/** Newest: only offered when a time window is set; still refuses off-topic rows first. */
+export const NEWEST_WEIGHTS: Weights = {
+  relevance: 0.35,
+  freshness: 0.6,
+  position: 0.05,
 };
 
 /**

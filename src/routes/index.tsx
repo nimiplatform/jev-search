@@ -19,7 +19,7 @@ function Home() {
     <main className="mx-auto flex min-h-[70dvh] max-w-2xl flex-col items-center justify-center px-4 py-16">
       <Wordmark size="lg" />
       <p className="mt-3 text-center text-muted-foreground">
-        Ask in plain language. We pick the right sources, send the right query, and rank what comes back. No generated answers.
+        Ask in plain language. Jev reads the question, picks the right sources across ten engines, and ranks every result by whether it answers you. No generated answers.
       </p>
       <div className="mt-8 w-full">
         <SearchBox autoFocus />

@@ -11,7 +11,18 @@ function list(names: string[]): string {
  * One plain sentence about what is happening, written for the person who
  * typed the request. The engineering readout lives behind "details".
  */
-export function Status({ state, hiddenOffTopic }: { state: AskState; hiddenOffTopic: number }) {
+export function Status({
+  state,
+  hiddenOffTopic,
+  sort,
+  onSort,
+}: {
+  state: AskState;
+  hiddenOffTopic: number;
+  /** Undefined hides the toggle (no time window, so "newest" means nothing). */
+  sort?: 'best' | 'newest';
+  onSort: (s: 'best' | 'newest') => void;
+}) {
   const { intent } = state;
   let text: React.ReactNode;
   if (!intent) {
@@ -43,6 +54,21 @@ export function Status({ state, hiddenOffTopic }: { state: AskState; hiddenOffTo
   return (
     <div className="flex items-baseline justify-between gap-4 text-sm text-muted-foreground">
       <p>{text}</p>
+      {intent && sort && (
+        <span className="ml-auto shrink-0 text-xs">
+          {(['best', 'newest'] as const).map((s, i) => (
+            <button
+              className={s === sort ? 'text-foreground font-medium' : 'hover:text-foreground'}
+              key={s}
+              onClick={() => onSort(s)}
+              type="button"
+            >
+              {i > 0 && <span className="mx-1.5 text-muted-foreground/50">·</span>}
+              {s === 'best' ? 'Best match' : 'Newest'}
+            </button>
+          ))}
+        </span>
+      )}
       {intent && (
         <details className="shrink-0 text-xs">
           <summary className="cursor-pointer select-none text-muted-foreground/70 hover:text-foreground">details</summary>

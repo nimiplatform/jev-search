@@ -53,7 +53,7 @@ function ResultRow({
         <span className="truncate">{displayUrl(item.url)}</span>
         {age && <span>· {age}</span>}
         {item.engines.length > 1 && (
-          <span title={item.engines.join(' + ')}>· {item.engines.length} engines</span>
+          <span title={item.engines.join(' + ')}>· found by {item.engines.length} engines</span>
         )}
       </div>
       <a

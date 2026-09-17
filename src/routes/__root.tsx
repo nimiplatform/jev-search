@@ -11,7 +11,7 @@ export const Route = createRootRoute({
       { title: 's1 ask' },
       {
         content:
-          'Ask in plain language. We pick the right sources across the web, Hacker News, Reddit, GitHub, X, arXiv, YouTube, Wikipedia, IMDb and WeChat, send the right query, and rank what comes back. No generated answers.',
+          'A search engine you talk to. Jev reads the question, picks the right sources across ten engines (web, Hacker News, Reddit, GitHub, X, arXiv, YouTube, Wikipedia, IMDb, WeChat), and ranks every result by whether it answers you. No generated answers.',
         name: 'description',
       },
     ],
@@ -43,15 +43,15 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
         <footer className="border-t px-4 py-4 text-xs text-muted-foreground">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2">
             <span>
-              Search by{' '}
+              Sources via{' '}
               <a className="underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
                 Search1API
               </a>
-              , judgments by{' '}
+              . Understanding and ranking by{' '}
               <a className="underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
-                TypeSafe
+                TypeSafe's Jev
               </a>
-              . Queries are sent to both.
+              . Your query is sent to both.
             </span>
             <a className="underline" href="https://github.com/fatwang2/s1-ask" rel="noreferrer" target="_blank">
               Open source

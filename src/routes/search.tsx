@@ -5,9 +5,8 @@ import { ProgressBar } from '@/components/progress';
 import { Status } from '@/components/status';
 import { Results, offTopicCount } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
-import { Weights } from '@/components/weights';
 import { Wordmark } from '@/components/wordmark';
-import { DEFAULT_WEIGHTS, clusterInOrder } from '@/lib/rank';
+import { DEFAULT_WEIGHTS, NEWEST_WEIGHTS, clusterInOrder } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
 import { useAsk, type AskState } from '@/lib/use-ask';
 import { useStableOrder } from '@/lib/use-stable-order';
@@ -55,9 +54,11 @@ function Header({ q, state }: { q: string; state: AskState }) {
 function SearchPage() {
   const params = Route.useSearch();
   const navigate = useNavigate({ from: '/search' });
-  const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
   const explicitSources = parseSources(params.s);
   const state = useAsk({ q: params.q, w: params.w, s: explicitSources });
+  const [sort, setSort] = useState<'best' | 'newest'>('best');
+  const windowed = Boolean(state.intent && state.intent.window !== 'any');
+  const weights = sort === 'newest' && windowed ? NEWEST_WEIGHTS : DEFAULT_WEIGHTS;
 
   const ordered = useStableOrder(state.items, weights);
   const clusters = useMemo(() => clusterInOrder(ordered, weights), [ordered, weights]);
@@ -81,7 +82,7 @@ function SearchPage() {
         )}
 
         {params.q.trim() && state.phase !== 'error' && (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
+          <div className="max-w-3xl">
             <div className="min-w-0">
               <Filters
                 state={state}
@@ -91,13 +92,15 @@ function SearchPage() {
                 onSources={setSources}
               />
               <div className="relative mt-4">
-                <Status state={state} hiddenOffTopic={offTopicCount(clusters)} />
+                <Status
+                  state={state}
+                  hiddenOffTopic={offTopicCount(clusters)}
+                  sort={windowed ? sort : undefined}
+                  onSort={setSort}
+                />
               </div>
               <Results clusters={clusters} request={params.q} weights={weights} streaming={state.phase !== 'done'} />
             </div>
-            <aside className="lg:sticky lg:top-20 lg:self-start">
-              <Weights value={weights} onChange={setWeights} />
-            </aside>
           </div>
         )}
       </main>
