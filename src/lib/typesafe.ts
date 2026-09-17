@@ -65,8 +65,14 @@ export async function systemOne(
     signal,
   });
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new TypeSafeError(response.status, text.slice(0, 300) || response.statusText);
+    // Provider error bodies are implementation details and may contain request data.
+    const message = response.status >= 500
+      ? 'Jev is temporarily unavailable. Please try again shortly.'
+      : response.status === 429
+        ? 'Jev is receiving too many requests. Please try again shortly.'
+        : `Jev could not process this request (HTTP ${response.status}).`;
+    await response.body?.cancel().catch(() => undefined);
+    throw new TypeSafeError(response.status, message);
   }
   return (await response.json()) as SystemOneResponse;
 }
