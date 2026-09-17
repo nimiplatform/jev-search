@@ -45,7 +45,7 @@ function ResultRow({
   const base = { request, url: item.url, source: item.source, relevance: item.relevance, rank };
 
   return (
-    <article className={cn('group transition-opacity duration-300', minor ? 'pl-4 border-l' : '', !item.ranked && 'opacity-50')}>
+    <article className={cn('group', minor ? 'pl-4 border-l' : '')}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center" title={sourceById(item.source).label}>
           <SourceIcon className="size-3.5" id={item.source} />
@@ -72,25 +72,18 @@ function ResultRow({
         <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{item.snippet}</p>
       )}
       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-        {item.ranked ? (
+        <span
+          className="inline-flex items-center gap-1"
+          title="How sure Jev is that this result is about what you asked"
+        >
           <span
-            className="inline-flex items-center gap-1"
-            title="How sure Jev is that this result is about what you asked"
-          >
-            <span
-              className={cn(
-                'inline-block size-2 rounded-full',
-                item.relevance >= 0.7 ? 'bg-emerald-500' : item.relevance >= 0.4 ? 'bg-amber-500' : 'bg-neutral-400'
-              )}
-            />
-            {Math.round(item.relevance * 100)}% on topic
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block size-2 rounded-full bg-neutral-300" />
-            checking if this answers you…
-          </span>
-        )}
+            className={cn(
+              'inline-block size-2 rounded-full',
+              item.relevance >= 0.7 ? 'bg-emerald-500' : item.relevance >= 0.4 ? 'bg-amber-500' : 'bg-neutral-400'
+            )}
+          />
+          {Math.round(item.relevance * 100)}% on topic
+        </span>
         <span className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <button
             aria-label="Useful"
@@ -133,8 +126,8 @@ export function Results({
   streaming: boolean;
 }) {
   const [showOffTopic, setShowOffTopic] = useState(false);
-  const onTopic = clusters.filter((c) => !c.lead.ranked || c.lead.relevance >= OFF_TOPIC);
-  const offTopic = clusters.filter((c) => c.lead.ranked && c.lead.relevance < OFF_TOPIC);
+  const onTopic = clusters.filter((c) => c.lead.relevance >= OFF_TOPIC);
+  const offTopic = clusters.filter((c) => c.lead.relevance < OFF_TOPIC);
 
   if (clusters.length === 0) {
     if (streaming) return null;
@@ -148,11 +141,7 @@ export function Results({
   let rank = 0;
   const render = (list: Cluster[]) =>
     list.map((cluster) => (
-      <li
-        className="enter flex flex-col gap-2"
-        key={cluster.lead.id}
-        style={{ viewTransitionName: `r-${cluster.lead.id.replace(/[^a-z0-9]/gi, '-')}` } as React.CSSProperties}
-      >
+      <li className="enter flex flex-col gap-2" key={cluster.lead.id}>
         <ResultRow item={cluster.lead} rank={++rank} request={request} />
         {cluster.others.map((item) => (
           <ResultRow item={item} key={item.id} minor rank={++rank} request={request} />

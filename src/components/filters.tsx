@@ -1,4 +1,5 @@
 import { SOURCES, WINDOWS, sourceById, type SourceId, type WindowId } from '@/lib/sources';
+import { QueryChip } from './query-chip';
 import { SourceIcon } from './source-icon';
 import type { AskState } from '@/lib/use-ask';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,8 @@ export function Filters({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
+        <QueryChip query={intent?.query ?? null} ready={ready} w={explicitWindow} s={explicitSources} />
+        <span className="text-muted-foreground/40">·</span>
         {WINDOWS.map((w) => (
           <button
             className={cn(chip, ready && intent!.window === w.id && active)}
@@ -62,8 +65,7 @@ export function Filters({
         {SOURCES.map((s) => {
           const on = selected.has(s.id);
           const lanes = sourceById(s.id).lanes;
-          const searching = on && lanes.some((l) => !(`${s.id}/${l.service}` in state.found) && !state.lanes[`${s.id}/${l.service}`]);
-          const sorting = on && !searching && lanes.some((l) => !state.lanes[`${s.id}/${l.service}`]);
+          const done = on && lanes.every((l) => state.lanes[`${s.id}/${l.service}`]);
           const count = counts.get(s.id) ?? 0;
           return (
             <button
@@ -73,20 +75,9 @@ export function Filters({
               onClick={() => toggleSource(s.id)}
               type="button"
             >
-              <SourceIcon
-                className={cn('size-3.5', searching && state.phase !== 'done' && 'animate-pulse')}
-                id={s.id}
-                on={on}
-              />
+              <SourceIcon className="size-3.5" id={s.id} on={on} />
               {s.label}
-              {on && !searching && (
-                <span
-                  className={cn('text-xs text-muted-foreground tabular-nums transition-opacity', sorting && 'opacity-40')}
-                  title={sorting ? 'Found, now sorting by how well each one answers you' : undefined}
-                >
-                  {count}
-                </span>
-              )}
+              {done && <span className="enter text-xs text-muted-foreground tabular-nums">{count}</span>}
             </button>
           );
         })}

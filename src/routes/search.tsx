@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Filters } from '@/components/filters';
-import { Status } from '@/components/status';
+import { Steps } from '@/components/steps';
 import { Results, ResultsPlaceholder } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
-import { clusterInOrder, type SortMode } from '@/lib/rank';
+import { clusterInOrder } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
 import { useAsk } from '@/lib/use-ask';
 import { useStableOrder } from '@/lib/use-stable-order';
@@ -54,11 +54,8 @@ function SearchPage() {
   const navigate = useNavigate({ from: '/search' });
   const explicitSources = parseSources(params.s);
   const state = useAsk({ q: params.q, w: params.w, s: explicitSources });
-  const [sort, setSort] = useState<SortMode>('best');
-  const windowed = Boolean(state.intent && state.intent.window !== 'any');
-  const mode: SortMode = windowed ? sort : 'best';
 
-  const ordered = useStableOrder(state.items, mode);
+  const ordered = useStableOrder(state.items, 'best');
   const clusters = useMemo(() => clusterInOrder(ordered), [ordered]);
 
   const setWindow = (w: WindowId | undefined) =>
@@ -89,9 +86,7 @@ function SearchPage() {
                 onWindow={setWindow}
                 onSources={setSources}
               />
-              <div className="relative mt-4">
-                <Status state={state} sort={windowed ? sort : undefined} onSort={setSort} />
-              </div>
+              <Steps state={state} />
               {state.items.length === 0 && state.phase !== 'done' ? (
                 <ResultsPlaceholder />
               ) : (

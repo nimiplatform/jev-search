@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { mergeItems } from './merge';
 import type { AskEvent, IntentEvent, LaneEvent } from './pipeline';
 import type { RankedItem } from './rank';
@@ -8,7 +7,7 @@ import type { SourceId, WindowId } from './sources';
 export interface AskState {
   phase: 'idle' | 'understanding' | 'searching' | 'done' | 'error';
   intent: IntentEvent | null;
-  /** Lanes folded by URL as they arrive; unranked rows carry `ranked: false`. */
+  /** Scored lanes folded by URL as they arrive. */
   items: RankedItem[];
   /** Lanes whose engine has answered (rows may still be unscored), keyed `${source}/${engine}`. */
   found: Record<string, number>;
@@ -35,11 +34,7 @@ function reduce(s: AskState, event: Incoming): AskState {
     case 'intent':
       return { ...s, phase: 'searching', intent: event };
     case 'found':
-      return {
-        ...s,
-        items: mergeItems(s.items, event.items),
-        found: { ...s.found, [`${event.source}/${event.engine}`]: event.items.length },
-      };
+      return { ...s, found: { ...s.found, [`${event.source}/${event.engine}`]: event.items.length } };
     case 'lane':
       return {
         ...s,
@@ -54,17 +49,12 @@ function reduce(s: AskState, event: Incoming): AskState {
   }
 }
 
-function canViewTransition(): boolean {
-  return (
-    typeof document !== 'undefined' &&
-    'startViewTransition' in document &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 /** Consume POST /api/ask as it streams, one JSON event per line. */
 export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
-  const [state, setState] = useState<AskState>(IDLE);
+  // Server render already shows "Reading your question" so the first frame matches the second.
+  const [state, setState] = useState<AskState>(() =>
+    params.q.trim() ? { ...IDLE, phase: 'understanding' } : IDLE
+  );
   const key = JSON.stringify(params);
 
   useEffect(() => {
@@ -75,16 +65,7 @@ export function useAsk(params: { q: string; w?: WindowId; s?: SourceId[] }) {
     const controller = new AbortController();
     setState({ ...IDLE, phase: 'understanding' });
 
-    const apply = (event: Incoming) => {
-      // Scored rows move into place: let the browser animate the reorder.
-      if (event.type === 'lane' && canViewTransition()) {
-        document.startViewTransition(() => {
-          flushSync(() => setState((s) => reduce(s, event)));
-        });
-        return;
-      }
-      setState((s) => reduce(s, event));
-    };
+    const apply = (event: Incoming) => setState((s) => reduce(s, event));
 
     (async () => {
       let response: Response;
