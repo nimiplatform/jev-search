@@ -1,10 +1,12 @@
 import { SOURCES, WINDOWS, sourceById, type SourceId, type WindowId } from '@/lib/sources';
+import { SourceIcon } from './source-icon';
 import type { AskState } from '@/lib/use-ask';
 import { cn } from '@/lib/utils';
 
 const chip =
-  'chip inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm hover:bg-accent disabled:opacity-50';
-const active = 'border-foreground bg-foreground text-background hover:bg-foreground';
+  'chip inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm text-muted-foreground hover:bg-accent disabled:opacity-50';
+/** Selected: the brand icon in colour, dark text, a firmer border. Never a filled block. */
+const active = 'border-foreground/50 bg-accent/60 text-foreground';
 
 /**
  * The only place that says where we are looking. Rendered from the first
@@ -85,12 +87,14 @@ export function Filters({
               type="button"
               {...litProps(`s:${s.id}`)}
             >
-              {on && pending && state.phase !== 'done' && (
-                <span className="inline-block size-1.5 rounded-full bg-current opacity-70 animate-pulse" />
-              )}
+              <SourceIcon
+                className={cn('size-3.5', on && pending && state.phase !== 'done' && 'animate-pulse')}
+                id={s.id}
+                on={on}
+              />
               {s.label}
               {on && !pending && (
-                <span className="text-xs opacity-70 tabular-nums">{count}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
               )}
             </button>
           );

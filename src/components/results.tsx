@@ -4,6 +4,7 @@ import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 import { feedbackFn, type FeedbackEvent } from '@/server/search';
+import { SourceIcon } from './source-icon';
 
 function formatAge(hours: number | null): string | null {
   if (hours === null) return null;
@@ -46,7 +47,10 @@ function ResultRow({
   return (
     <article className={cn('group', minor ? 'pl-4 border-l' : '')}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground/80">{sourceById(item.source).label}</span>
+        <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+          <SourceIcon className="size-3" id={item.source} />
+          {sourceById(item.source).label}
+        </span>
         <span className="truncate">{displayUrl(item.url)}</span>
         {age && <span>· {age}</span>}
         {item.engines.length > 1 && (
