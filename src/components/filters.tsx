@@ -45,9 +45,7 @@ export function Filters({
         ))}
         {!explicitWindow && (
           <Badge variant="outline" className="text-muted-foreground">
-            {data.inferred.window.choice === 'unspecified'
-              ? 'default'
-              : `inferred · ${Math.round(data.inferred.window.confidence * 100)}%`}
+            inferred · {Math.round(data.inferred.window.confidence * 100)}%
           </Badge>
         )}
       </div>
@@ -65,7 +63,7 @@ export function Filters({
         ))}
         {!explicitSources && (
           <Badge variant="outline" className="text-muted-foreground">
-            {data.sources.length === SOURCES.length ? 'all sources' : 'inferred'}
+            inferred
           </Badge>
         )}
         {explicitSources && (

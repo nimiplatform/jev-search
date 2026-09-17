@@ -1,11 +1,14 @@
 export type SourceId =
+  | 'web'
   | 'hackernews'
   | 'reddit'
   | 'github'
   | 'x'
-  | 'web'
   | 'arxiv'
-  | 'youtube';
+  | 'youtube'
+  | 'wikipedia'
+  | 'imdb'
+  | 'wechat';
 
 /**
  * One Search1API `/search` call. `service` is the engine; `site` restricts a
@@ -20,6 +23,8 @@ export type SourceId =
 export interface Lane {
   service: string;
   site?: string;
+  /** False for engines that reject or ignore `time_range` (wikipedia, imdb, wechat). */
+  timeFilter?: boolean;
 }
 
 /** General engines that search the whole web and need `exclude_sites` on the open-web source. */
@@ -45,16 +50,28 @@ export interface Source {
 
 export const SOURCES: readonly Source[] = [
   {
+    id: 'web',
+    label: 'Web',
+    lanes: siteLanes(),
+    description: 'News sites, blogs and documentation anywhere on the web',
+    ask: {
+      question: 'Would general web pages (news, articles, blogs, docs) help answer this request?',
+      yes: 'The request is a general question, or asks for news, articles, coverage, docs or blog posts',
+      no: 'The request only makes sense on a specific platform such as Reddit, GitHub, arXiv, YouTube or IMDb',
+    },
+    defaultOn: true,
+  },
+  {
     id: 'hackernews',
     label: 'Hacker News',
     lanes: siteLanes('news.ycombinator.com'),
     description: 'Hacker News threads and comments',
     ask: {
-      question: 'Does the user ask for Hacker News (HN) specifically?',
-      yes: 'The request names Hacker News or HN, or asks what HN commenters think',
-      no: 'Hacker News is not mentioned or implied',
+      question: 'Would Hacker News threads fit this request?',
+      yes: 'The request names Hacker News or HN, or asks what developers or the tech community are saying, their reactions, opinions or discussion about a technical topic',
+      no: 'The request is a factual lookup, or is about something outside technology and startups',
     },
-    defaultOn: true,
+    defaultOn: false,
   },
   {
     id: 'reddit',
@@ -62,11 +79,11 @@ export const SOURCES: readonly Source[] = [
     lanes: siteLanes('reddit.com'),
     description: 'Reddit posts and comment threads',
     ask: {
-      question: 'Does the user ask for Reddit specifically?',
-      yes: 'The request names Reddit, a subreddit (r/…), or redditors',
-      no: 'Reddit is not mentioned or implied',
+      question: 'Would Reddit threads fit this request?',
+      yes: 'The request names Reddit or a subreddit, or asks what people are saying, their experiences, recommendations, opinions or discussion',
+      no: 'The request is a factual lookup or asks for official sources, code, papers or videos',
     },
-    defaultOn: true,
+    defaultOn: false,
   },
   {
     id: 'github',
@@ -78,7 +95,7 @@ export const SOURCES: readonly Source[] = [
       yes: 'The request names GitHub, or asks for repos, libraries, releases, issues, PRs, or open source tools',
       no: 'The request is about discussion, news or opinions rather than code',
     },
-    defaultOn: true,
+    defaultOn: false,
   },
   {
     id: 'x',
@@ -86,23 +103,11 @@ export const SOURCES: readonly Source[] = [
     lanes: siteLanes('x.com'),
     description: 'Posts on X (formerly Twitter)',
     ask: {
-      question: 'Does the user ask for X (Twitter) specifically?',
-      yes: 'The request names X, Twitter, tweets, or a specific account',
-      no: 'X / Twitter is not mentioned or implied',
+      question: 'Would posts on X (Twitter) fit this request?',
+      yes: 'The request names X, Twitter or tweets, asks what a specific person or company posted, or asks for live reactions and announcements',
+      no: 'The request is a factual lookup or asks for long-form content',
     },
-    defaultOn: true,
-  },
-  {
-    id: 'web',
-    label: 'Web',
-    lanes: siteLanes(),
-    description: 'News sites, blogs and documentation anywhere else on the web',
-    ask: {
-      question: 'Is the user asking for news coverage, articles or blog posts?',
-      yes: 'The request asks for news, coverage, articles, announcements or blog posts',
-      no: 'The request is only about community discussion, code, papers or videos',
-    },
-    defaultOn: true,
+    defaultOn: false,
   },
   {
     id: 'arxiv',
@@ -113,6 +118,42 @@ export const SOURCES: readonly Source[] = [
       question: 'Is the user asking for academic papers, research or preprints?',
       yes: 'The request mentions papers, research, arXiv, studies or preprints',
       no: 'The request is not about academic research',
+    },
+    defaultOn: false,
+  },
+  {
+    id: 'wikipedia',
+    label: 'Wikipedia',
+    lanes: [{ service: 'wikipedia', timeFilter: false }],
+    description: 'Encyclopedia articles on Wikipedia',
+    ask: {
+      question: 'Is the user asking for encyclopedic facts, definitions, background or history?',
+      yes: 'The request asks what or who something is, how it works, its history or background facts',
+      no: 'The request asks for opinions, news, recent events, code, papers or videos',
+    },
+    defaultOn: false,
+  },
+  {
+    id: 'imdb',
+    label: 'IMDb',
+    lanes: [{ service: 'imdb', timeFilter: false }],
+    description: 'Movies, TV shows, actors and directors on IMDb',
+    ask: {
+      question: 'Is the user asking about a film, TV series, actor, director or other screen credit?',
+      yes: 'The request names or describes a movie or show, or asks who acted in, directed or made one',
+      no: 'The request is not about film or television',
+    },
+    defaultOn: false,
+  },
+  {
+    id: 'wechat',
+    label: 'WeChat',
+    lanes: [{ service: 'wechat', timeFilter: false }],
+    description: 'Articles from WeChat official accounts (微信公众号)',
+    ask: {
+      question: 'Would Chinese-language articles from WeChat official accounts (微信公众号) fit this request?',
+      yes: 'The request mentions 微信, 公众号 or WeChat, or is written in Chinese and asks for articles, tutorials, analysis or opinions',
+      no: 'The request is not in Chinese and does not mention WeChat',
     },
     defaultOn: false,
   },
@@ -149,18 +190,25 @@ export function sourceById(id: SourceId): Source {
   return found;
 }
 
-export type WindowId = '24h' | '7d' | '30d';
+export type WindowId = 'any' | '24h' | '7d' | '30d';
 
 export interface Window {
   id: WindowId;
   label: string;
+  /** Infinity for no limit. */
   hours: number;
-  /** Search1API `time_range` value. */
-  timeRange: 'day' | 'week' | 'month';
+  /** Search1API `time_range` value; undefined sends no filter. */
+  timeRange?: 'day' | 'week' | 'month';
   description: string;
 }
 
 export const WINDOWS: readonly Window[] = [
+  {
+    id: 'any',
+    label: 'Any time',
+    hours: Number.POSITIVE_INFINITY,
+    description: 'The request does not ask for recent results; older, evergreen pages are fine',
+  },
   {
     id: '24h',
     label: 'Past 24 hours',
@@ -184,7 +232,7 @@ export const WINDOWS: readonly Window[] = [
   },
 ];
 
-export const DEFAULT_WINDOW: WindowId = '7d';
+export const DEFAULT_WINDOW: WindowId = 'any';
 
 export function isWindowId(value: string): value is WindowId {
   return WINDOWS.some((w) => w.id === value);

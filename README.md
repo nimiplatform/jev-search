@@ -1,16 +1,18 @@
 # last24hours
 
-Ask in plain language what happened recently. Get the right sources, ranked. No generated answers.
+Ask in plain language. The app picks the right sources, sends the right query, and ranks what comes back. No generated answers.
 
-> "what are people saying about Bun 1.3 this week" → the last 7 days on Reddit, Hacker News, GitHub, X and the web, ranked by whether each hit is actually about Bun the runtime, not hair buns.
+> "what are people saying about Bun 1.3 this week" → the last 7 days on Hacker News, Reddit, X and the web, ranked by whether each hit is about Bun the runtime, not hair buns.
+> "who directed Oppenheimer and who is in it" → any time, web + Wikipedia + IMDb.
+> "Claude Code 入门教程视频" → YouTube only.
 
 **How it works**
 
-1. **Understand the request.** [TypeSafe](https://typesafe.ai)'s Jev model answers typed questions about the request: how far back (24h / 7d / 30d), which sources the user wants, and which keyword candidate to send to the engine. It returns probabilities, not prose, so code owns every decision.
-2. **Search each source on several engines.** Hacker News, Reddit, GitHub, X and the open web are each queried through [Search1API](https://www.search1api.com) on Google *and* DuckDuckGo with `include_sites` and `time_range`; the two lists are fused per source (reciprocal rank), a URL both engines return outranks one only one returns, and one engine failing does not empty the source. Both engines prefix snippets with "3 days ago", which is where freshness comes from; anything provably older than the window is dropped. arXiv and YouTube use Search1API's vertical engines and are searched only when the request asks for papers or videos. Adding a source or an engine is one entry in `src/lib/sources.ts`.
-3. **Judge every result.** One yes/no question per result: is this about what was asked? That probability, the age parsed from the snippet, and Google's own rank are combined with weights you can drag in the UI. Near-duplicates are grouped.
+1. **Understand the request.** [TypeSafe](https://typesafe.ai)'s Jev model answers typed questions about the request: whether it wants recent results and how recent (any time by default, or 24h / 7d / 30d), which of the ten sources fit, and which keyword candidate to send to the engines. It returns probabilities, not prose, so code owns every decision. Everything it inferred is shown as chips the user can change.
+2. **Search each source, on more than one engine where it helps.** Everything goes through [Search1API](https://www.search1api.com). The open web, Hacker News, Reddit, GitHub and X are each queried on Google *and* DuckDuckGo with `include_sites` (and `time_range` when a window is set); the two lists are fused per source by reciprocal rank, a URL both engines return outranks one only one returns, and one engine failing does not empty the source. arXiv, YouTube, Wikipedia, IMDb and WeChat use Search1API's vertical engines. Snippets that carry a date ("3 days ago …", "2026-09-13") give freshness; with a window set, anything provably older is dropped. Adding a source or an engine is one entry in `src/lib/sources.ts`.
+3. **Judge every result.** One yes/no question per result: is this about what was asked? That probability, the age parsed from the snippet, and the engines' own rank are combined with weights you can drag in the UI. Near-duplicates are grouped.
 
-Everything the app inferred is shown as editable chips. Every edit, click and thumbs-up is logged (anonymously, to Cloudflare Analytics Engine) so the judge can be evaluated against real use.
+Every edit to the chips, every click and every thumbs-up is logged (anonymously, to Cloudflare Analytics Engine) so the judge can be evaluated against real use.
 
 ## Run it
 

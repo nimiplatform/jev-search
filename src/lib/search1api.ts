@@ -7,7 +7,7 @@ export interface SearchParams {
   query: string;
   /** Search1API `search_service`; defaults to google. */
   service?: string;
-  timeRange: 'day' | 'week' | 'month';
+  timeRange?: 'day' | 'week' | 'month';
   includeSites?: string[];
   excludeSites?: string[];
   maxResults?: number;
@@ -62,7 +62,7 @@ export async function search(
     body: JSON.stringify({
       query: params.query,
       search_service: params.service ?? 'google',
-      time_range: params.timeRange,
+      ...(params.timeRange ? { time_range: params.timeRange } : {}),
       max_results: params.maxResults ?? 8,
       include_sites: params.includeSites ?? [],
       exclude_sites: params.excludeSites ?? [],

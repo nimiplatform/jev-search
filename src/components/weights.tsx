@@ -3,7 +3,7 @@ import { DEFAULT_WEIGHTS, type Weights as WeightsValue } from '@/lib/rank';
 
 const ROWS: { key: keyof WeightsValue; label: string; hint: string }[] = [
   { key: 'relevance', label: 'On topic', hint: 'How much the judge thinks it is about your request' },
-  { key: 'freshness', label: 'Fresh', hint: 'Newer within the window ranks higher' },
+  { key: 'freshness', label: 'Fresh', hint: 'Newer within the window ranks higher (no effect on Any time)' },
   { key: 'position', label: 'Engine rank', hint: "Google's own ordering within each source" },
 ];
 

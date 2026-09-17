@@ -116,6 +116,27 @@ describe('runSearch', () => {
     expect(searches[0]!.body).toMatchObject({ search_service: 'arxiv', include_sites: [], exclude_sites: [] });
   });
 
+  it('sends no time filter for Any time, and never to engines that reject it', async () => {
+    stubFetch();
+    const out = await runSearch(
+      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { request: 'Oppenheimer', window: 'any', sources: ['web', 'imdb'] }
+    );
+    const searches = calls.filter((c) => c.url.endsWith('/search'));
+    expect(searches.every((c) => !('time_range' in c.body))).toBe(true);
+    // Any time: the stale row is kept and freshness is flat.
+    expect(out.items.every((i) => i.freshness === 0.5)).toBe(true);
+
+    calls.length = 0;
+    await runSearch(
+      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { request: 'Oppenheimer', window: '7d', sources: ['web', 'imdb'] }
+    );
+    const again = calls.filter((c) => c.url.endsWith('/search'));
+    expect(again.filter((c) => c.body.search_service === 'imdb').every((c) => !('time_range' in c.body))).toBe(true);
+    expect(again.filter((c) => c.body.search_service === 'google').every((c) => c.body.time_range === 'week')).toBe(true);
+  });
+
   it('keeps going when one source fails', async () => {
     stubFetch();
     const original = globalThis.fetch as ReturnType<typeof vi.fn>;

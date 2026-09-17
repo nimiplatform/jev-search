@@ -34,6 +34,7 @@ describe('freshnessScore', () => {
     expect(freshnessScore(12, 24)).toBe(0.5);
     expect(freshnessScore(48, 24)).toBe(0);
     expect(freshnessScore(null, 24)).toBe(0.35);
+    expect(freshnessScore(2000, Number.POSITIVE_INFINITY)).toBe(0.5);
   });
 });
 

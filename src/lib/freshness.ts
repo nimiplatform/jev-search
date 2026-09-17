@@ -62,6 +62,8 @@ export function freshnessScore(
   ageHours: number | null,
   windowHours: number
 ): number {
+  // No window: freshness is not a criterion, so every item gets the same value.
+  if (!Number.isFinite(windowHours)) return 0.5;
   if (ageHours === null) return 0.35;
   return Math.max(0, Math.min(1, 1 - ageHours / windowHours));
 }

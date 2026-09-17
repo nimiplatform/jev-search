@@ -71,9 +71,7 @@ export async function runSearch(
   );
   const intentMs = Math.round(performance.now() - t0);
 
-  const window =
-    input.window ??
-    (intent.window.choice === 'unspecified' ? DEFAULT_WINDOW : intent.window.choice);
+  const window = input.window ?? intent.window.choice ?? DEFAULT_WINDOW;
 
   let sources: SourceId[];
   if (input.sources && input.sources.length > 0) {
@@ -100,7 +98,7 @@ export async function runSearch(
         {
           query,
           service: lane.service,
-          timeRange: win.timeRange,
+          timeRange: lane.timeFilter === false ? undefined : win.timeRange,
           maxResults: RESULTS_PER_LANE,
           includeSites: lane.site ? [lane.site] : [],
           excludeSites: !lane.site && GENERAL_ENGINES.has(lane.service) ? RESTRICTED_SITES : [],
@@ -133,7 +131,7 @@ export async function runSearch(
     let position = 0;
     for (const { result: raw, engines } of fused) {
       const ageHours = parseAgeHours(raw.snippet, now.getTime());
-      if (ageHours !== null && ageHours > maxAge) continue;
+      if (ageHours !== null && ageHours > maxAge) continue; // maxAge is Infinity for 'any'
       position += 1;
       items.push({
         id: `${source}:${position}`,

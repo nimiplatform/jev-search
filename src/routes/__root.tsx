@@ -11,7 +11,7 @@ export const Route = createRootRoute({
       { title: 'last24hours' },
       {
         content:
-          'Ask in plain language what happened recently on Hacker News, Reddit, GitHub, X and the web. No generated answers, just the right sources, ranked.',
+          'Ask in plain language. We pick the right sources across the web, Hacker News, Reddit, GitHub, X, arXiv, YouTube, Wikipedia, IMDb and WeChat, send the right query, and rank what comes back. No generated answers.',
         name: 'description',
       },
     ],

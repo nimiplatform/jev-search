@@ -76,7 +76,7 @@ export async function systemOne(
 // ---------------------------------------------------------------------------
 
 export interface Intent {
-  window: { choice: WindowId | 'unspecified'; confidence: number };
+  window: { choice: WindowId; confidence: number };
   /** Probability that the user specifically wants each source. */
   sources: Record<SourceId, number>;
   /** Index into the candidates array the caller passed in. */
@@ -93,12 +93,10 @@ export async function inferIntent(
 
   const windowCriteria: Record<string, string> = {};
   for (const w of WINDOWS) windowCriteria[w.id] = w.description;
-  windowCriteria.unspecified =
-    'The request does not say or imply how recent the results should be';
   questions.window = {
     type: 'choice',
     instructions:
-      'How far back in time does the user want results for the request in `request`? Judge only from what the request says or clearly implies; `now` is the current date.',
+      'Does the request in `request` ask for recent results, and if so how recent? Judge only from what the request says or clearly implies; `now` is the current date. A request with no time cue wants any time.',
     criteria: windowCriteria,
   };
 
@@ -135,10 +133,10 @@ export async function inferIntent(
   const window =
     windowAnswer?.type === 'choice'
       ? {
-          choice: windowAnswer.choice as WindowId | 'unspecified',
+          choice: windowAnswer.choice as WindowId,
           confidence: windowAnswer.confidence,
         }
-      : { choice: 'unspecified' as const, confidence: 0 };
+      : { choice: 'any' as const, confidence: 0 };
 
   const sources = {} as Record<SourceId, number>;
   for (const s of SOURCES) {
