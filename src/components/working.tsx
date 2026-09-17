@@ -36,7 +36,9 @@ function sourceLines(state: AskState): Line[] {
         icon: id,
         text: (
           <>
-            {source.label} · {found} found{scored.length > 0 && `, ${answering} answer you so far`}
+            {source.label} · {found} found
+            {scored.length > 0 && `, ${answering} answer you so far`}
+            <span className="text-muted-foreground"> · checking which answer you…</span>
           </>
         ),
       };
@@ -105,7 +107,7 @@ export function Working({ state }: { state: AskState }) {
         {found > 0 && <span className="text-muted-foreground/70"> · {found} found so far</span>}
       </>
     );
-  } else summary = 'Sorting…';
+  } else summary = <>Checking which of the {found} answer you…</>;
 
   return (
     <section className="mt-4 text-sm">
@@ -118,8 +120,8 @@ export function Working({ state }: { state: AskState }) {
         <span className={cn(!intent && 'animate-pulse')}>{summary}</span>
       </button>
 
-      {open && (
-        <ol className="enter mt-2 ml-1.5 flex flex-col gap-1.5 border-l pl-4">
+      <div className="fold" data-open={open ? '' : undefined}>
+        <ol className="mt-2 ml-1.5 flex flex-col gap-1.5 border-l pl-4">
           {intent && (
             <li className="flex items-center gap-2 text-muted-foreground">
               <Mark state="done" />
@@ -155,7 +157,7 @@ export function Working({ state }: { state: AskState }) {
             </li>
           )}
         </ol>
-      )}
+      </div>
     </section>
   );
 }

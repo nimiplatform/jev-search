@@ -121,6 +121,23 @@
   }
 }
 
+/* The working block folding to its one-line summary: height and opacity
+   together, interruptible (a transition, not keyframes). */
+.fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows var(--dur-focal) var(--ease-in-out), opacity var(--dur) var(--ease-out);
+}
+.fold[data-open] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.fold > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Chips: state changes are colour, not movement. */
 .chip {
   transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
@@ -130,5 +147,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .enter { transition-duration: 120ms; }
+  .fold { transition-duration: 120ms; }
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 120ms; animation-name: none; }
 }
