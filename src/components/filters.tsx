@@ -71,7 +71,6 @@ export function Filters({
             {w.label}
           </button>
         ))}
-        {ready && !explicitWindow && <span className="text-xs text-muted-foreground">auto</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {SOURCES.map((s) => {
@@ -99,7 +98,6 @@ export function Filters({
             </button>
           );
         })}
-        {ready && !explicitSources && <span className="text-xs text-muted-foreground">auto</span>}
         {explicitSources && (
           <button className="text-xs text-muted-foreground underline" onClick={() => onSources(undefined)} type="button">
             reset

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
 import { Status } from '@/components/status';
-import { Results, offTopicCount } from '@/components/results';
+import { Results, ResultsPlaceholder, offTopicCount } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
@@ -97,7 +97,11 @@ function SearchPage() {
                   onSort={setSort}
                 />
               </div>
-              <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
+              {state.items.length === 0 && state.phase !== 'done' ? (
+                <ResultsPlaceholder />
+              ) : (
+                <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
+              )}
             </div>
           </div>
         )}

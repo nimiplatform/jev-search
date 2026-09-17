@@ -184,6 +184,21 @@ export function Results({
   );
 }
 
+/** Three result-shaped rows, shown while the first real rows are on their way. */
+export function ResultsPlaceholder() {
+  return (
+    <div aria-hidden className="placeholder mt-6 flex flex-col gap-6">
+      {[0.55, 0.7, 0.45].map((w, i) => (
+        <div className="flex flex-col gap-2" key={i}>
+          <div className="shimmer h-3 w-40" />
+          <div className="shimmer h-5" style={{ width: `${w * 100}%` }} />
+          <div className="shimmer h-4 w-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function offTopicCount(clusters: Cluster[]): number {
   return clusters.filter((c) => c.lead.relevance < OFF_TOPIC).length;
 }

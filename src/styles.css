@@ -124,6 +124,32 @@
   }
 }
 
+/* Waiting for the first rows: result-shaped lines with a light moving
+   across them. Appears only after a short delay so a fast answer never
+   flashes it, and sits exactly where the rows will land. */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--muted) 70%, transparent);
+  border-radius: var(--radius-sm);
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--background) 60%, transparent), transparent);
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer { to { transform: translateX(100%); } }
+.placeholder {
+  opacity: 1;
+  transition: opacity var(--dur) var(--ease-out);
+  transition-delay: 350ms;
+  @starting-style { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .shimmer::after { animation: none; } }
+
 /* Chips: state changes are colour, not movement. */
 .chip {
   transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease, border-color var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
