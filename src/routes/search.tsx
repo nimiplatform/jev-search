@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
 import { Status } from '@/components/status';
-import { Results, ResultsPlaceholder, offTopicCount } from '@/components/results';
+import { Results, ResultsPlaceholder } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
@@ -90,12 +90,7 @@ function SearchPage() {
                 onSources={setSources}
               />
               <div className="relative mt-4">
-                <Status
-                  state={state}
-                  hiddenOffTopic={offTopicCount(clusters)}
-                  sort={windowed ? sort : undefined}
-                  onSort={setSort}
-                />
+                <Status state={state} sort={windowed ? sort : undefined} onSort={setSort} />
               </div>
               {state.items.length === 0 && state.phase !== 'done' ? (
                 <ResultsPlaceholder />

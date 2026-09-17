@@ -1,5 +1,5 @@
 import { ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
@@ -86,7 +86,7 @@ function ResultRow({
             {Math.round(item.relevance * 100)}% on topic
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 animate-pulse">
+          <span className="inline-flex items-center gap-1">
             <span className="inline-block size-2 rounded-full bg-neutral-300" />
             checking if this answers you…
           </span>
@@ -123,21 +123,6 @@ function ResultRow({
 /** Below this the judge says "not about what you asked"; such rows are folded away, not deleted. */
 export const OFF_TOPIC = 0.3;
 
-/**
- * Entrance order within a batch: rows that appear in the same render get
- * successive delays (capped) so a batch reads as arriving, not popping.
- */
-function useEnterIndex() {
-  const seen = useRef(new Map<string, number>());
-  return (ids: string[]) => {
-    let i = 0;
-    for (const id of ids) {
-      if (!seen.current.has(id)) seen.current.set(id, Math.min(i++, 6));
-    }
-    return (id: string) => seen.current.get(id) ?? 0;
-  };
-}
-
 export function Results({
   clusters,
   request,
@@ -148,7 +133,6 @@ export function Results({
   streaming: boolean;
 }) {
   const [showOffTopic, setShowOffTopic] = useState(false);
-  const enterIndex = useEnterIndex()(clusters.map((c) => c.lead.id));
   const onTopic = clusters.filter((c) => !c.lead.ranked || c.lead.relevance >= OFF_TOPIC);
   const offTopic = clusters.filter((c) => c.lead.ranked && c.lead.relevance < OFF_TOPIC);
 
@@ -167,7 +151,7 @@ export function Results({
       <li
         className="enter flex flex-col gap-2"
         key={cluster.lead.id}
-        style={{ '--i': enterIndex(cluster.lead.id), viewTransitionName: `r-${cluster.lead.id.replace(/[^a-z0-9]/gi, '-')}` } as React.CSSProperties}
+        style={{ viewTransitionName: `r-${cluster.lead.id.replace(/[^a-z0-9]/gi, '-')}` } as React.CSSProperties}
       >
         <ResultRow item={cluster.lead} rank={++rank} request={request} />
         {cluster.others.map((item) => (
@@ -186,7 +170,7 @@ export function Results({
             onClick={() => setShowOffTopic((v) => !v)}
             type="button"
           >
-            {showOffTopic ? 'Hide' : 'Show'} {offTopic.length} off-topic {offTopic.length === 1 ? 'result' : 'results'}
+            {showOffTopic ? 'Hide' : 'Show'} {offTopic.length} more that {offTopic.length === 1 ? "didn't" : "didn't"} seem to match
           </button>
           {showOffTopic && <ol className="mt-4 flex flex-col gap-6 opacity-70">{render(offTopic)}</ol>}
         </div>
@@ -210,8 +194,6 @@ export function ResultsPlaceholder() {
   );
 }
 
-export function offTopicCount(clusters: Cluster[]): number {
-  return clusters.filter((c) => c.lead.ranked && c.lead.relevance < OFF_TOPIC).length;
-}
+
 
 

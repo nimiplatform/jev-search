@@ -2,18 +2,16 @@ import type { AskState } from '@/lib/use-ask';
 
 /**
  * Says something only when there is something to say: that the judge sent
- * a different query than the words typed, or that off-topic rows were
- * folded away. Counts live on the chips; "still searching" is the chips'
- * breathing dots. Before the request has been read there is one line.
+ * a different query than the words typed. Counts live on the chips;
+ * "still searching" is the chips' breathing icons. Before the request has
+ * been read there is one line.
  */
 export function Status({
   state,
-  hiddenOffTopic,
   sort,
   onSort,
 }: {
   state: AskState;
-  hiddenOffTopic: number;
   /** Undefined hides the toggle (no time window, so "newest" means nothing). */
   sort?: 'best' | 'newest';
   onSort: (s: 'best' | 'newest') => void;
@@ -32,9 +30,6 @@ export function Status({
           <span className="font-medium text-foreground">“{intent.query}”</span>
         </span>
       );
-    }
-    if (state.phase === 'done' && hiddenOffTopic > 0) {
-      parts.push(<span key="hidden">{hiddenOffTopic} off-topic hidden below</span>);
     }
   }
 
