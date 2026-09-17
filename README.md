@@ -47,7 +47,7 @@ Tests mock providers and do not need API keys. Building does not call either pro
 The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers, KV and optionally Analytics Engine enabled.
 
 1. Run `pnpm exec wrangler login`.
-2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account.
+2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the absolute social-card URLs in `src/routes/__root.tsx` and `src/routes/index.tsx` to match your deployment.
 3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
 4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap.
 5. Optionally rename the Analytics Engine dataset, or remove its binding to disable application analytics. Regenerate types after changing bindings. `CACHE`, `FEEDBACK` and `SEARCH_RATE_LIMIT` are optional.

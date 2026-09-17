@@ -2,6 +2,11 @@ import { HeadContent, Link, Scripts, createRootRoute, useRouterState } from '@ta
 import type { ReactNode } from 'react';
 import appCss from '../styles.css?url';
 
+const TITLE = 'Jev Search — Picks where to search. Ranks what comes back.';
+const DESCRIPTION = "TypeSafe's Jev reads your question, selects sources, time ranges and search terms, and ranks the results. No generated answers.";
+const SHARE_IMAGE = 'https://jev.s1.dev/og-home.png';
+const SHARE_IMAGE_ALT = 'Jev Search homepage with a search box, example queries and supported search engines.';
+
 export const Route = createRootRoute({
   head: () => ({
     links: [
@@ -18,12 +23,22 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },
-      { title: 'Jev Search — Picks where to search. Ranks what comes back.' },
-      {
-        content:
-          "TypeSafe's Jev reads your question, selects sources, time ranges and search terms, and ranks the results. No generated answers.",
-        name: 'description',
-      },
+      { title: TITLE },
+      { name: 'description', content: DESCRIPTION },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: 'Jev Search' },
+      { property: 'og:title', content: TITLE },
+      { property: 'og:description', content: DESCRIPTION },
+      { property: 'og:image', content: SHARE_IMAGE },
+      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:alt', content: SHARE_IMAGE_ALT },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: TITLE },
+      { name: 'twitter:description', content: DESCRIPTION },
+      { name: 'twitter:image', content: SHARE_IMAGE },
+      { name: 'twitter:image:alt', content: SHARE_IMAGE_ALT },
     ],
   }),
   notFoundComponent: NotFound,

@@ -3,6 +3,9 @@ import { EngineStrip } from '@/components/home-demos';
 import { SearchBox } from '@/components/search-box';
 
 export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [{ property: 'og:url', content: 'https://jev.s1.dev/' }],
+  }),
   component: Home,
 });
 
