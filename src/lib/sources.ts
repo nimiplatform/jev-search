@@ -106,8 +106,8 @@ export const SOURCES: readonly Source[] = [
     description: 'Posts on X (formerly Twitter)',
     ask: {
       question: 'Would posts on X (Twitter) fit this request?',
-      yes: 'The request names X, Twitter or tweets, asks what a specific person or company posted, or asks for live reactions and announcements',
-      no: 'The request is a factual lookup or asks for long-form content',
+      yes: 'The request names X, Twitter or tweets, or asks what people are saying, their reactions, opinions or discussion about a product, launch, announcement, company or person, especially in tech and startups; launches and news break on X first',
+      no: 'The request is a factual lookup, or asks for long-form content such as tutorials, papers or documentation',
     },
     defaultOn: false,
   },
