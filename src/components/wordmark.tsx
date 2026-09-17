@@ -10,7 +10,7 @@ export function Wordmark({ size }: { size: 'sm' | 'lg' }) {
       )}
       to="/"
     >
-      last<span className="text-primary">24</span>hours
+      s1<span className="text-primary"> ask</span>
     </Link>
   );
 }

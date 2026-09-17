@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import type { SearchOutput } from '@/lib/pipeline';
+import type { IntentEvent } from '@/lib/pipeline';
 import { SOURCES, WINDOWS, type SourceId, type WindowId } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 
@@ -8,19 +8,19 @@ const chip =
 const active = 'border-foreground bg-foreground text-background hover:bg-foreground';
 
 export function Filters({
-  data,
+  intent,
   explicitWindow,
   explicitSources,
   onWindow,
   onSources,
 }: {
-  data: SearchOutput;
+  intent: IntentEvent;
   explicitWindow: WindowId | undefined;
   explicitSources: SourceId[] | undefined;
   onWindow: (w: WindowId | undefined) => void;
   onSources: (s: SourceId[] | undefined) => void;
 }) {
-  const selected = new Set(data.sources);
+  const selected = new Set(intent.sources);
 
   const toggleSource = (id: SourceId) => {
     const next = new Set(selected);
@@ -35,9 +35,9 @@ export function Filters({
       <div className="flex flex-wrap items-center gap-2">
         {WINDOWS.map((w) => (
           <button
-            className={cn(chip, data.window === w.id && active)}
+            className={cn(chip, intent.window === w.id && active)}
             key={w.id}
-            onClick={() => onWindow(w.id === data.window && explicitWindow ? undefined : w.id)}
+            onClick={() => onWindow(w.id === intent.window && explicitWindow ? undefined : w.id)}
             type="button"
           >
             {w.label}
@@ -45,7 +45,7 @@ export function Filters({
         ))}
         {!explicitWindow && (
           <Badge variant="outline" className="text-muted-foreground">
-            inferred · {Math.round(data.inferred.window.confidence * 100)}%
+            inferred · {Math.round(intent.inferred.window.confidence * 100)}%
           </Badge>
         )}
       </div>
@@ -55,7 +55,7 @@ export function Filters({
             className={cn(chip, selected.has(s.id) && active)}
             key={s.id}
             onClick={() => toggleSource(s.id)}
-            title={`${Math.round(data.inferred.sources[s.id] * 100)}% likely wanted`}
+            title={`${Math.round(intent.inferred.sources[s.id] * 100)}% likely wanted`}
             type="button"
           >
             {s.label}

@@ -6,6 +6,7 @@ describe('buildCandidates', () => {
     const c = buildCandidates('what are people saying about Bun 1.3 this week');
     expect(c[0]).toBe('what are people saying about Bun 1.3 this week');
     expect(c[1]).toBe('Bun 1.3');
+    expect(c).toHaveLength(2);
   });
   it('strips source and time phrases', () => {
     expect(buildCandidates('reddit threads about self-hosting Postgres in the last 24 hours')[1]).toBe(
@@ -24,5 +25,12 @@ describe('buildCandidates', () => {
   });
   it('returns one candidate when nothing to strip', () => {
     expect(buildCandidates('Bun 1.3')).toEqual(['Bun 1.3']);
+  });
+  it('adds a keywords-only candidate for questions', () => {
+    expect(buildCandidates('who directed Oppenheimer and who is in it')).toEqual([
+      'who directed Oppenheimer and who is in it',
+      'directed Oppenheimer',
+      'Oppenheimer',
+    ]);
   });
 });

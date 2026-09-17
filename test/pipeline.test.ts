@@ -25,6 +25,8 @@ function stubFetch() {
         for (const [id, q] of Object.entries(questions)) {
           if (id === 'window') {
             answers[id] = { type: 'choice', choice: '7d', probabilities: { '7d': 0.8 }, confidence: 0.8 };
+          } else if (id === 'entity') {
+            answers[id] = { type: 'choice', choice: 'c0', probabilities: { c0: 0.9 }, confidence: 0.9 };
           } else if (id === 'query') {
             answers[id] = { type: 'choice', choice: 'c1', probabilities: { c0: 0.2, c1: 0.8 }, confidence: 0.8 };
           } else if (id.startsWith('source_')) {
@@ -76,7 +78,7 @@ describe('runSearch', () => {
     expect(out.query).toBe('Bun 1.3');
 
     const searchCalls = calls.filter((c) => c.url.endsWith('/search'));
-    expect(searchCalls.map((c) => c.body.search_service)).toEqual(['google', 'duckduckgo']);
+    expect(searchCalls.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
     expect(searchCalls[0]!.body).toMatchObject({
       query: 'Bun 1.3',
       time_range: 'week',
@@ -101,9 +103,11 @@ describe('runSearch', () => {
     expect(out.sources).toEqual(['web', 'github']);
     const searches = calls.filter((c) => c.url.endsWith('/search'));
     expect(searches).toHaveLength(4);
-    expect(searches[0]!.body).toMatchObject({ search_service: 'google', time_range: 'day', include_sites: [], exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
-    expect(searches[1]!.body).toMatchObject({ search_service: 'duckduckgo', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
-    expect(searches[2]!.body).toMatchObject({ search_service: 'google', include_sites: ['github.com'] });
+    const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0);
+    const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com');
+    expect(web.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
+    expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com', 'x.com'] });
+    expect(gh.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
   });
 
   it('uses the vertical engine for vertical sources', async () => {
@@ -155,6 +159,7 @@ describe('runSearch', () => {
       { source: 'github', engine: 'google', message: 'upstream broke' },
       { source: 'github', engine: 'duckduckgo', message: 'upstream broke' },
     ]);
+    expect(out.totalMs).toBeGreaterThanOrEqual(0);
     expect(out.items.map((i) => i.source)).toEqual(['reddit', 'reddit']);
   });
 });

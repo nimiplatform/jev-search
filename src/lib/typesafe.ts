@@ -81,6 +81,8 @@ export interface Intent {
   sources: Record<SourceId, number>;
   /** Index into the candidates array the caller passed in. */
   query: { index: number; confidence: number };
+  /** Candidate that is just the name or title being asked about, for catalogue engines. */
+  entity: { index: number; confidence: number };
   usage: SystemOneResponse['usage'];
 }
 
@@ -119,6 +121,12 @@ export async function inferIntent(
         'Which candidate in `candidates` is the best keyword query to send to a web search engine so the results match what the user is asking for in `request`? Prefer the candidate that keeps the subject and drops words about time, sources or phrasing that a search engine would treat as keywords.',
       criteria,
     };
+    questions.entity = {
+      type: 'choice',
+      instructions:
+        'Which candidate in `candidates` is just the name or title of the thing the user is asking about in `request`, as you would type it into a catalogue such as IMDb or a library index? Prefer the shortest candidate that is still the full proper name.',
+      criteria,
+    };
   }
 
   const state = {
@@ -153,7 +161,13 @@ export async function inferIntent(
         }
       : { index: 0, confidence: 1 };
 
-  return { window, sources, query, usage: res.usage };
+  const entityAnswer = res.answers.entity;
+  const entity =
+    entityAnswer?.type === 'choice'
+      ? { index: Number(entityAnswer.choice.slice(1)) || 0, confidence: entityAnswer.confidence }
+      : query;
+
+  return { window, sources, query, entity, usage: res.usage };
 }
 
 // ---------------------------------------------------------------------------

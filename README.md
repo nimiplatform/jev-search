@@ -1,4 +1,4 @@
-# last24hours
+# s1 ask
 
 Ask in plain language. The app picks the right sources, sends the right query, and ranks what comes back. No generated answers.
 
@@ -11,6 +11,8 @@ Ask in plain language. The app picks the right sources, sends the right query, a
 1. **Understand the request.** [TypeSafe](https://typesafe.ai)'s Jev model answers typed questions about the request: whether it wants recent results and how recent (any time by default, or 24h / 7d / 30d), which of the ten sources fit, and which keyword candidate to send to the engines. It returns probabilities, not prose, so code owns every decision. Everything it inferred is shown as chips the user can change.
 2. **Search each source, on more than one engine where it helps.** Everything goes through [Search1API](https://www.search1api.com). The open web, Hacker News, Reddit, GitHub and X are each queried on Google *and* DuckDuckGo with `include_sites` (and `time_range` when a window is set); the two lists are fused per source by reciprocal rank, a URL both engines return outranks one only one returns, and one engine failing does not empty the source. arXiv, YouTube, Wikipedia, IMDb and WeChat use Search1API's vertical engines. Snippets that carry a date ("3 days ago …", "2026-09-13") give freshness; with a window set, anything provably older is dropped. Adding a source or an engine is one entry in `src/lib/sources.ts`.
 3. **Judge every result.** One yes/no question per result: is this about what was asked? That probability, the age parsed from the snippet, and the engines' own rank are combined with weights you can drag in the UI. Near-duplicates are grouped.
+
+The whole thing streams. `POST /api/ask` returns newline-delimited JSON: first what the judge understood (chips render within about a second), then each source as soon as its engines have answered and its results are scored, then a summary. Each engine call has an 8-second cap so one slow engine cannot hold the page.
 
 Every edit to the chips, every click and every thumbs-up is logged (anonymously, to Cloudflare Analytics Engine) so the judge can be evaluated against real use.
 
@@ -48,8 +50,10 @@ src/lib/typesafe.ts    TypeSafe client + the two judgments (intent, relevance)
 src/lib/search1api.ts  Search1API client
 src/lib/freshness.ts   age parsed from snippet prefixes ("3 days ago ...")
 src/lib/rank.ts        composite score, clustering
-src/lib/pipeline.ts    orchestration: infer → fan out → judge
-src/server/search.ts   server functions (search, feedback), rate limit, logging
+src/lib/pipeline.ts    orchestration as an event stream: infer → per-source fan out → judge
+src/lib/use-ask.ts     client hook that consumes the stream
+src/routes/api/ask.ts  POST /api/ask (NDJSON), same-origin check, rate limit, logging
+src/server/search.ts   feedback server function
 src/routes/            /  and  /search?q=&w=&s=
 ```
 

@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { Filters } from '@/components/filters';
+import { Progress } from '@/components/progress';
 import { Results, ResultsSkeleton } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Weights } from '@/components/weights';
 import { Wordmark } from '@/components/wordmark';
 import { DEFAULT_WEIGHTS, clusterItems } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
-import { searchFn } from '@/server/search';
+import { useAsk } from '@/lib/use-ask';
 
 interface SearchParams {
   q: string;
@@ -29,17 +30,9 @@ export const Route = createFileRoute('/search')({
     if (typeof raw.s === 'string' && raw.s) out.s = raw.s;
     return out;
   },
-  loaderDeps: ({ search }) => ({ q: search.q, w: search.w, s: search.s }),
-  loader: async ({ deps }) => {
-    if (!deps.q.trim()) return null;
-    return searchFn({ data: { q: deps.q, w: deps.w, s: parseSources(deps.s) } });
-  },
-  head: ({ loaderData }) => {
-    const q = loaderData?.ok ? loaderData.data.request : '';
-    return { meta: [{ title: q ? `${q} · last24hours` : 'last24hours' }] };
-  },
-  pendingComponent: Pending,
-  pendingMs: 150,
+  head: ({ match }) => ({
+    meta: [{ title: match.search.q ? `${match.search.q} · s1 ask` : 's1 ask' }],
+  }),
   component: SearchPage,
 });
 
@@ -49,37 +42,21 @@ function Header({ q }: { q: string }) {
       <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3">
         <Wordmark size="sm" />
         <div className="flex-1 max-w-2xl">
-          <SearchBox initial={q} compact />
+          <SearchBox initial={q} compact key={q} />
         </div>
       </div>
     </header>
   );
 }
 
-function Pending() {
-  const { q } = Route.useSearch();
-  return (
-    <>
-      <Header q={q} />
-      <main className="mx-auto max-w-5xl px-4 py-4">
-        <p className="text-sm text-muted-foreground">Reading the request, searching, ranking…</p>
-        <ResultsSkeleton />
-      </main>
-    </>
-  );
-}
-
 function SearchPage() {
   const params = Route.useSearch();
-  const response = Route.useLoaderData();
   const navigate = useNavigate({ from: '/search' });
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
+  const explicitSources = parseSources(params.s);
+  const state = useAsk({ q: params.q, w: params.w, s: explicitSources });
 
-  const data = response?.ok ? response.data : null;
-  const clusters = useMemo(
-    () => (data ? clusterItems(data.items, weights) : []),
-    [data, weights]
-  );
+  const clusters = useMemo(() => clusterItems(state.items, weights), [state.items, weights]);
 
   const setWindow = (w: WindowId | undefined) =>
     navigate({ search: (prev) => ({ ...prev, w }) });
@@ -90,41 +67,47 @@ function SearchPage() {
     <>
       <Header q={params.q} />
       <main className="mx-auto max-w-5xl px-4 py-4">
-        {!params.q.trim() && (
-          <p className="text-muted-foreground">Type something to search.</p>
-        )}
+        {!params.q.trim() && <p className="text-muted-foreground">Type something to search.</p>}
 
-        {response && !response.ok && (
+        {state.phase === 'error' && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
-            <p className="font-medium">
-              {response.error === 'rate_limited' ? 'Slow down' : 'Search failed'}
-            </p>
-            <p className="mt-1 text-muted-foreground">{response.message}</p>
+            <p className="font-medium">Search failed</p>
+            <p className="mt-1 text-muted-foreground">{state.message}</p>
           </div>
         )}
 
-        {data && (
+        {params.q.trim() && state.phase !== 'error' && (
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
             <div className="min-w-0">
-              <Filters
-                data={data}
-                explicitWindow={params.w}
-                explicitSources={parseSources(params.s)}
-                onWindow={setWindow}
-                onSources={setSources}
-              />
-              <p className="mt-3 text-xs text-muted-foreground">
-                Searched Google for <span className="font-medium text-foreground">“{data.query}”</span>
-                {data.query !== data.request && ' (rewritten from your request)'} ·{' '}
-                {data.items.length} results in {clusters.length} groups ·{' '}
-                {data.timing.intentMs + data.timing.searchMs + data.timing.rerankMs} ms
-              </p>
-              {data.errors.length > 0 && (
-                <p className="mt-2 text-xs text-destructive">
-                  {data.errors.map((e) => `${e.source}/${e.engine}: ${e.message}`).join(' · ')}
+              {state.intent ? (
+                <Filters
+                  intent={state.intent}
+                  explicitWindow={params.w}
+                  explicitSources={explicitSources}
+                  onWindow={setWindow}
+                  onSources={setSources}
+                />
+              ) : null}
+              <div className="mt-3">
+                <Progress state={state} />
+              </div>
+              {state.intent && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Searching for <span className="font-medium text-foreground">“{state.intent.query}”</span>
+                  {state.intent.query !== state.intent.request && ' (rewritten from your request)'}
+                  {state.phase === 'done' && ` · ${state.items.length} results in ${clusters.length} groups`}
                 </p>
               )}
-              <Results clusters={clusters} request={data.request} weights={weights} />
+              {state.errors.length > 0 && (
+                <p className="mt-2 text-xs text-destructive">
+                  {state.errors.map((e) => `${e.source}/${e.engine}: ${e.message}`).join(' · ')}
+                </p>
+              )}
+              {state.items.length === 0 && state.phase !== 'done' ? (
+                <ResultsSkeleton />
+              ) : (
+                <Results clusters={clusters} request={params.q} weights={weights} />
+              )}
             </div>
             <aside className="lg:sticky lg:top-20 lg:self-start">
               <Weights value={weights} onChange={setWeights} />

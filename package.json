@@ -1,9 +1,9 @@
 {
-  "name": "last24hours",
+  "name": "s1-ask",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Natural-language search for what happened recently across HN, Reddit, GitHub, X and the web. Powered by Search1API.",
+  "description": "s1 ask: ask in plain language, get the right sources across the web and vertical engines, ranked. Powered by Search1API and TypeSafe.",
   "scripts": {
     "dev": "vite dev --port 3030",
     "generate-routes": "tsr generate",

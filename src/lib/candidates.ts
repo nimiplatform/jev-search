@@ -36,6 +36,40 @@ const TRAILING_FILLER = [
   /\s*(的讨论|的新闻|的动态|怎么样|如何|吗)\s*[?？。!]*$/,
 ];
 
+/**
+ * Question scaffolding and function words. A third candidate with these
+ * removed gives vertical engines (IMDb, Wikipedia, arXiv) a keyword query
+ * instead of a sentence; the judge decides whether it is the better one.
+ */
+const FUNCTION_WORDS = new Set([
+  'who', 'what', 'when', 'where', 'which', 'why', 'how', 'whom', 'whose',
+  'is', 'are', 'was', 'were', 'be', 'been', 'do', 'does', 'did', 'has', 'have', 'had',
+  'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'about', 'from', 'by',
+  'and', 'or', 'it', 'its', 'this', 'that', 'these', 'those', 'there', 'their', 'them', 'they',
+  'me', 'my', 'i', 'we', 'our', 'you', 'your', 'can', 'could', 'should', 'would', 'will',
+  'please', 'some', 'any', 'all', 'much', 'many',
+]);
+
+function contentWords(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter((w) => !FUNCTION_WORDS.has(w.toLowerCase().replace(/[^\p{L}\p{N}.+#-]/gu, '')))
+    .join(' ');
+}
+
+/**
+ * Capitalised words and version-like tokens, in order: the closest a
+ * regex gets to "the thing being asked about". Used as the lookup key for
+ * catalogue engines (IMDb) when the judge agrees it is the entity.
+ */
+function properNouns(text: string): string {
+  return text
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}.+#]+$/gu, ''))
+    .filter((w) => w && !FUNCTION_WORDS.has(w.toLowerCase()) && (/^\p{Lu}/u.test(w) || /\d/.test(w)))
+    .join(' ');
+}
+
 function tidy(text: string): string {
   return text
     .replace(/\s{2,}/g, ' ')
@@ -57,5 +91,12 @@ export function buildCandidates(request: string): string[] {
   if (stripped && stripped.toLowerCase() !== original.toLowerCase()) {
     candidates.push(stripped);
   }
+  const push = (value: string) => {
+    if (value && !candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
+      candidates.push(value);
+    }
+  };
+  push(tidy(contentWords(stripped || original)));
+  push(tidy(properNouns(stripped || original)));
   return candidates;
 }

@@ -8,7 +8,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },
-      { title: 'last24hours' },
+      { title: 's1 ask' },
       {
         content:
           'Ask in plain language. We pick the right sources across the web, Hacker News, Reddit, GitHub, X, arXiv, YouTube, Wikipedia, IMDb and WeChat, send the right query, and rank what comes back. No generated answers.',
@@ -53,7 +53,7 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
               </a>
               . Queries are sent to both.
             </span>
-            <a className="underline" href="https://github.com/fatwang2/last24hours" rel="noreferrer" target="_blank">
+            <a className="underline" href="https://github.com/fatwang2/s1-ask" rel="noreferrer" target="_blank">
               Open source
             </a>
           </div>

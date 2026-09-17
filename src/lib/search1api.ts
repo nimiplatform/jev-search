@@ -47,12 +47,17 @@ export class Search1ApiError extends Error {
  * `include_sites` / `exclude_sites`; vertical engines are picked with
  * `service`. Recency is `time_range` in both cases.
  */
+/** One slow engine must not hold up the others; the stream shows what arrived. */
+export const LANE_TIMEOUT_MS = 8_000;
+
 export async function search(
   config: Search1ApiConfig,
   params: SearchParams,
   signal?: AbortSignal
 ): Promise<RawResult[]> {
   const base = (config.baseUrl ?? 'https://api.search1api.com').replace(/\/$/, '');
+  const timeout = AbortSignal.timeout(LANE_TIMEOUT_MS);
+  const laneSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
   const response = await fetch(`${base}/search`, {
     method: 'POST',
     headers: {
@@ -67,7 +72,7 @@ export async function search(
       include_sites: params.includeSites ?? [],
       exclude_sites: params.excludeSites ?? [],
     }),
-    signal,
+    signal: laneSignal,
   });
   if (!response.ok) {
     const text = await response.text().catch(() => '');
