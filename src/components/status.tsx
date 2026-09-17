@@ -1,6 +1,5 @@
 import { sourceById } from '@/lib/sources';
 import type { AskState } from '@/lib/use-ask';
-import { Progress, Understanding } from './progress';
 
 function list(names: string[]): string {
   if (names.length <= 1) return names.join('');
@@ -9,7 +8,7 @@ function list(names: string[]): string {
 
 /**
  * One plain sentence about what is happening, written for the person who
- * typed the request. The engineering readout lives behind "details".
+ * typed the request.
  */
 export function Status({
   state,
@@ -68,15 +67,6 @@ export function Status({
             </button>
           ))}
         </span>
-      )}
-      {intent && (
-        <details className="shrink-0 text-xs">
-          <summary className="cursor-pointer select-none text-muted-foreground/70 hover:text-foreground">details</summary>
-          <div className="absolute right-4 z-10 mt-2 flex max-w-2xl flex-col gap-2 rounded-lg border bg-popover p-3 shadow-md lg:right-auto">
-            <Understanding intent={intent} />
-            <Progress state={state} />
-          </div>
-        </details>
       )}
     </div>
   );

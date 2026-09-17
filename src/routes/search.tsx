@@ -6,7 +6,7 @@ import { Status } from '@/components/status';
 import { Results, offTopicCount } from '@/components/results';
 import { SearchBox } from '@/components/search-box';
 import { Wordmark } from '@/components/wordmark';
-import { DEFAULT_WEIGHTS, NEWEST_WEIGHTS, clusterInOrder } from '@/lib/rank';
+import { clusterInOrder, type SortMode } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
 import { useAsk, type AskState } from '@/lib/use-ask';
 import { useStableOrder } from '@/lib/use-stable-order';
@@ -56,12 +56,12 @@ function SearchPage() {
   const navigate = useNavigate({ from: '/search' });
   const explicitSources = parseSources(params.s);
   const state = useAsk({ q: params.q, w: params.w, s: explicitSources });
-  const [sort, setSort] = useState<'best' | 'newest'>('best');
+  const [sort, setSort] = useState<SortMode>('best');
   const windowed = Boolean(state.intent && state.intent.window !== 'any');
-  const weights = sort === 'newest' && windowed ? NEWEST_WEIGHTS : DEFAULT_WEIGHTS;
+  const mode: SortMode = windowed ? sort : 'best';
 
-  const ordered = useStableOrder(state.items, weights);
-  const clusters = useMemo(() => clusterInOrder(ordered, weights), [ordered, weights]);
+  const ordered = useStableOrder(state.items, mode);
+  const clusters = useMemo(() => clusterInOrder(ordered), [ordered]);
 
   const setWindow = (w: WindowId | undefined) =>
     navigate({ search: (prev) => ({ ...prev, w }) });
@@ -99,7 +99,7 @@ function SearchPage() {
                   onSort={setSort}
                 />
               </div>
-              <Results clusters={clusters} request={params.q} weights={weights} streaming={state.phase !== 'done'} />
+              <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
             </div>
           </div>
         )}

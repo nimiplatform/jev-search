@@ -1,41 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { compositeScore, type RankedItem, type Weights } from './rank';
+import { compareItems, type RankedItem, type SortMode } from './rank';
 
 /**
  * Order for a list that grows while the reader is looking at it.
  *
  * New rows are inserted where their score puts them, but rows already on
- * screen never swap places because of a later arrival. Changing the weights
- * is a deliberate act, so that re-sorts everything at once.
+ * screen never swap places because of a later arrival. Changing the sort
+ * mode is a deliberate act, so that re-sorts everything at once.
  */
-export function useStableOrder(items: RankedItem[], weights: Weights): RankedItem[] {
+export function useStableOrder(items: RankedItem[], mode: SortMode): RankedItem[] {
   const [order, setOrder] = useState<string[]>([]);
-  const lastWeights = useRef(weights);
+  const lastMode = useRef(mode);
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
 
   useEffect(() => {
     if (items.length === 0) {
       setOrder([]);
-      lastWeights.current = weights;
+      lastMode.current = mode;
       return;
     }
-    const weightsChanged = lastWeights.current !== weights;
-    lastWeights.current = weights;
+    const modeChanged = lastMode.current !== mode;
+    lastMode.current = mode;
     setOrder((prev) => {
       const known = new Set(prev.filter((id) => byId.has(id)));
-      if (weightsChanged) {
-        return [...items].sort((a, b) => compositeScore(b, weights) - compositeScore(a, weights)).map((i) => i.id);
+      if (modeChanged) {
+        return [...items].sort((a, b) => compareItems(a, b, mode)).map((i) => i.id);
       }
       const next = prev.filter((id) => byId.has(id));
-      const fresh = items
-        .filter((i) => !known.has(i.id))
-        .sort((a, b) => compositeScore(b, weights) - compositeScore(a, weights));
+      const fresh = items.filter((i) => !known.has(i.id)).sort((a, b) => compareItems(a, b, mode));
       for (const item of fresh) {
-        const score = compositeScore(item, weights);
         let at = next.length;
         for (let i = 0; i < next.length; i += 1) {
           const other = byId.get(next[i]!);
-          if (other && compositeScore(other, weights) < score) {
+          if (other && compareItems(item, other, mode) < 0) {
             at = i;
             break;
           }
@@ -44,7 +41,7 @@ export function useStableOrder(items: RankedItem[], weights: Weights): RankedIte
       }
       return next;
     });
-  }, [items, weights, byId]);
+  }, [items, mode, byId]);
 
   return useMemo(
     () => order.map((id) => byId.get(id)).filter((i): i is RankedItem => Boolean(i)),

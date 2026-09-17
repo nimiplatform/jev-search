@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_WEIGHTS, canonicalUrl, clusterItems, compositeScore, fuseLanes, positionScore, titleKey, type RankedItem } from '@/lib/rank';
+import { canonicalUrl, clusterItems, compareItems, titleKey, type RankedItem } from '@/lib/rank';
 
 function item(partial: Partial<RankedItem> & { id: string }): RankedItem {
   return {
-    source: 'web',
+    source: 'google',
     title: 'Title',
     url: `https://example.com/${partial.id}`,
     snippet: '',
@@ -39,21 +39,19 @@ describe('clusterItems', () => {
     const a = item({ id: 'a', relevance: 0.9, title: 'Bun 1.3 released' });
     const b = item({ id: 'b', relevance: 0.2, title: 'Hair bun tutorial' });
     const c = item({ id: 'c', relevance: 0.8, title: 'Bun 1.3 released - Reddit', url: 'https://reddit.com/x' });
-    const clusters = clusterItems([b, a, c], DEFAULT_WEIGHTS);
+    const clusters = clusterItems([b, a, c]);
     expect(clusters.map((cl) => cl.lead.id)).toEqual(['a', 'b']);
     expect(clusters[0]!.others.map((o) => o.id)).toEqual(['c']);
-    expect(compositeScore(a, DEFAULT_WEIGHTS)).toBeGreaterThan(compositeScore(b, DEFAULT_WEIGHTS));
+  });
+  it('orders by the shown percentage, then engine agreement, then engine rank', () => {
+    const a = item({ id: 'a', relevance: 0.84, freshness: 0.1, position: 5 });
+    const b = item({ id: 'b', relevance: 0.78, freshness: 1, position: 1, engines: ['google', 'duckduckgo'] });
+    const c = item({ id: 'c', relevance: 0.841, position: 1 });
+    expect([b, a, c].sort((x, y) => compareItems(x, y, 'best')).map((i) => i.id)).toEqual(['c', 'a', 'b']);
+    const old = item({ id: 'old', relevance: 0.9, ageHours: 100 });
+    const fresh = item({ id: 'fresh', relevance: 0.6, ageHours: 2 });
+    const unknown = item({ id: 'unknown', relevance: 0.95, ageHours: null });
+    expect([old, unknown, fresh].sort((x, y) => compareItems(x, y, 'newest')).map((i) => i.id)).toEqual(['fresh', 'old', 'unknown']);
   });
 });
 
-describe('fuseLanes', () => {
-  it('merges the same URL across engines and ranks agreement first', () => {
-    const fused = fuseLanes([
-      { engine: 'google', results: [{ link: 'https://a.com/1' }, { link: 'https://b.com/2' }] },
-      { engine: 'duckduckgo', results: [{ link: 'https://c.com/3' }, { link: 'https://www.a.com/1/' }] },
-    ]);
-    expect(fused.map((f) => f.result.link)).toEqual(['https://a.com/1', 'https://c.com/3', 'https://b.com/2']);
-    expect(fused[0]!.engines).toEqual(['google', 'duckduckgo']);
-    expect(positionScore(1, 2)).toBeGreaterThan(positionScore(1, 1));
-  });
-});

@@ -99,10 +99,10 @@ describe('runSearch', () => {
     stubFetch();
     const out = await runSearch(
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
-      { request: 'Bun 1.3', window: '24h', sources: ['web', 'github'] }
+      { request: 'Bun 1.3', window: '24h', sources: ['google', 'duckduckgo', 'github'] }
     );
     expect(out.window).toBe('24h');
-    expect(out.sources).toEqual(['web', 'github']);
+    expect(out.sources).toEqual(['google', 'duckduckgo', 'github']);
     const searches = calls.filter((c) => c.url.endsWith('/search'));
     expect(searches).toHaveLength(4);
     const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0);
@@ -126,7 +126,7 @@ describe('runSearch', () => {
     stubFetch();
     const out = await runSearch(
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
-      { request: 'Oppenheimer', window: 'any', sources: ['web', 'imdb'] }
+      { request: 'Oppenheimer', window: 'any', sources: ['google', 'imdb'] }
     );
     const searches = calls.filter((c) => c.url.endsWith('/search'));
     expect(searches.every((c) => !('time_range' in c.body))).toBe(true);
@@ -136,7 +136,7 @@ describe('runSearch', () => {
     calls.length = 0;
     await runSearch(
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
-      { request: 'Oppenheimer', window: '7d', sources: ['web', 'imdb'] }
+      { request: 'Oppenheimer', window: '7d', sources: ['google', 'imdb'] }
     );
     const again = calls.filter((c) => c.url.endsWith('/search'));
     expect(again.filter((c) => c.body.search_service === 'imdb').every((c) => !('time_range' in c.body))).toBe(true);

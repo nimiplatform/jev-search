@@ -1,5 +1,6 @@
 export type SourceId =
-  | 'web'
+  | 'google'
+  | 'duckduckgo'
   | 'hackernews'
   | 'reddit'
   | 'github'
@@ -52,10 +53,22 @@ export interface Source {
 
 export const SOURCES: readonly Source[] = [
   {
-    id: 'web',
-    label: 'Web',
-    lanes: siteLanes(),
-    description: 'News sites, blogs and documentation anywhere on the web',
+    id: 'google',
+    label: 'Google',
+    lanes: [{ service: 'google' }],
+    description: 'Google web results: news sites, blogs, documentation, anything on the open web',
+    ask: {
+      question: 'Would general web pages (news, articles, blogs, docs) help answer this request?',
+      yes: 'The request is a general question, or asks for news, articles, coverage, docs or blog posts',
+      no: 'The request only makes sense on a specific platform such as Reddit, GitHub, arXiv, YouTube or IMDb',
+    },
+    defaultOn: true,
+  },
+  {
+    id: 'duckduckgo',
+    label: 'DuckDuckGo',
+    lanes: [{ service: 'duckduckgo' }],
+    description: 'DuckDuckGo web results: a second, independent view of the open web',
     ask: {
       question: 'Would general web pages (news, articles, blogs, docs) help answer this request?',
       yes: 'The request is a general question, or asks for news, articles, coverage, docs or blog posts',

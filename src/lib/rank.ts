@@ -18,72 +18,32 @@ export interface RankedItem {
   engines: string[];
 }
 
-export interface Weights {
-  relevance: number;
-  freshness: number;
-  position: number;
-}
 
-/** Best match: what the judge thinks first, then recency, then the engines' own order. */
-export const DEFAULT_WEIGHTS: Weights = {
-  relevance: 0.6,
-  freshness: 0.3,
-  position: 0.1,
-};
 
-/** Newest: only offered when a time window is set; still refuses off-topic rows first. */
-export const NEWEST_WEIGHTS: Weights = {
-  relevance: 0.35,
-  freshness: 0.6,
-  position: 0.05,
-};
+export type SortMode = 'best' | 'newest';
 
 /**
- * Reciprocal-rank style prior: rank 1 → 0.83, rank 10 → 0.33, plus 0.15 for
- * every extra engine that also returned the URL (agreement is evidence).
+ * Ordering is exactly what the row shows. Best match: the judge's on-topic
+ * percentage, ties broken by how many engines agreed, then engine rank.
+ * Newest: known age first, ties by on-topic; unknown age goes last.
  */
-export function positionScore(position: number, engines = 1): number {
-  return Math.min(1, 5 / (5 + position) + 0.15 * Math.max(0, engines - 1));
-}
-
-export function compositeScore(item: RankedItem, weights: Weights): number {
-  const total = weights.relevance + weights.freshness + weights.position || 1;
-  return (
-    (item.relevance * weights.relevance +
-      item.freshness * weights.freshness +
-      positionScore(item.position, item.engines.length) * weights.position) /
-    total
-  );
-}
-
-/**
- * Reciprocal rank fusion of several engines' lists for one source. Same URL
- * from two engines becomes one row that remembers both engines.
- */
-export function fuseLanes<T extends { link: string }>(
-  lists: { engine: string; results: T[] }[],
-  k = 60
-): { result: T; engines: string[]; score: number }[] {
-  const merged = new Map<string, { result: T; engines: string[]; score: number }>();
-  for (const { engine, results } of lists) {
-    results.forEach((result, index) => {
-      const key = canonicalUrl(result.link);
-      const row = merged.get(key);
-      if (row) {
-        row.score += 1 / (k + index + 1);
-        if (!row.engines.includes(engine)) row.engines.push(engine);
-      } else {
-        merged.set(key, { result, engines: [engine], score: 1 / (k + index + 1) });
-      }
-    });
+export function compareItems(a: RankedItem, b: RankedItem, mode: SortMode): number {
+  if (mode === 'newest') {
+    const aa = a.ageHours ?? Number.POSITIVE_INFINITY;
+    const bb = b.ageHours ?? Number.POSITIVE_INFINITY;
+    if (aa !== bb) return aa - bb;
   }
-  return [...merged.values()].sort((a, b) => b.score - a.score);
+  const ra = Math.round(a.relevance * 100);
+  const rb = Math.round(b.relevance * 100);
+  if (ra !== rb) return rb - ra;
+  if (a.engines.length !== b.engines.length) return b.engines.length - a.engines.length;
+  return a.position - b.position;
 }
+
 
 export interface Cluster {
   lead: RankedItem;
   others: RankedItem[];
-  score: number;
 }
 
 const TITLE_NOISE = [
@@ -129,25 +89,20 @@ export function canonicalUrl(url: string): string {
  * Group near-duplicates (same URL or same normalized title) so one story does
  * not occupy five slots. Ordering is by the lead's composite score.
  */
-export function clusterItems(items: RankedItem[], weights: Weights): Cluster[] {
-  const sorted = [...items].sort(
-    (a, b) => compositeScore(b, weights) - compositeScore(a, weights)
-  );
-  return clusterInOrder(sorted, weights);
+export function clusterItems(items: RankedItem[], mode: SortMode = 'best'): Cluster[] {
+  return clusterInOrder([...items].sort((a, b) => compareItems(a, b, mode)));
 }
 
 /**
  * Same grouping, but the lead order is the order given. Used while results
  * stream in so rows the reader has already seen do not move.
  */
-export function clusterInOrder(items: RankedItem[], weights: Weights): Cluster[] {
-  const scored = items.map((item) => ({ item, score: compositeScore(item, weights) }));
-
+export function clusterInOrder(items: RankedItem[]): Cluster[] {
   const byUrl = new Map<string, Cluster>();
   const byTitle = new Map<string, Cluster>();
   const clusters: Cluster[] = [];
 
-  for (const { item, score } of scored) {
+  for (const item of items) {
     const urlKey = canonicalUrl(item.url);
     const tKey = titleKey(item.title);
     const existing = byUrl.get(urlKey) ?? (tKey ? byTitle.get(tKey) : undefined);
@@ -155,7 +110,7 @@ export function clusterInOrder(items: RankedItem[], weights: Weights): Cluster[]
       existing.others.push(item);
       continue;
     }
-    const cluster: Cluster = { lead: item, others: [], score };
+    const cluster: Cluster = { lead: item, others: [] };
     clusters.push(cluster);
     byUrl.set(urlKey, cluster);
     if (tKey) byTitle.set(tKey, cluster);

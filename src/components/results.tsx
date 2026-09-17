@@ -1,7 +1,6 @@
 import { ThumbsDownIcon, ThumbsUpIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
-import type { Cluster, RankedItem, Weights } from '@/lib/rank';
-import { compositeScore } from '@/lib/rank';
+import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 import { feedbackFn, type FeedbackEvent } from '@/server/search';
@@ -33,13 +32,11 @@ function ResultRow({
   item,
   rank,
   request,
-  weights,
   minor,
 }: {
   item: RankedItem;
   rank: number;
   request: string;
-  weights: Weights;
   minor?: boolean;
 }) {
   const [vote, setVote] = useState<'useful' | 'irrelevant' | null>(null);
@@ -74,7 +71,7 @@ function ResultRow({
       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
         <span
           className="inline-flex items-center gap-1"
-          title={`relevance ${item.relevance.toFixed(2)} · freshness ${item.freshness.toFixed(2)} · composite ${compositeScore(item, weights).toFixed(2)}`}
+          title="How sure Jev is that this result is about what you asked"
         >
           <span
             className={cn(
@@ -134,12 +131,10 @@ function useEnterIndex() {
 export function Results({
   clusters,
   request,
-  weights,
   streaming,
 }: {
   clusters: Cluster[];
   request: string;
-  weights: Weights;
   streaming: boolean;
 }) {
   const [showOffTopic, setShowOffTopic] = useState(false);
@@ -160,9 +155,9 @@ export function Results({
   const render = (list: Cluster[]) =>
     list.map((cluster) => (
       <li className="enter flex flex-col gap-2" key={cluster.lead.id} style={{ '--i': enterIndex(cluster.lead.id) } as React.CSSProperties}>
-        <ResultRow item={cluster.lead} rank={++rank} request={request} weights={weights} />
+        <ResultRow item={cluster.lead} rank={++rank} request={request} />
         {cluster.others.map((item) => (
-          <ResultRow item={item} key={item.id} minor rank={++rank} request={request} weights={weights} />
+          <ResultRow item={item} key={item.id} minor rank={++rank} request={request} />
         ))}
       </li>
     ));
