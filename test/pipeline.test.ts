@@ -95,6 +95,16 @@ describe('runSearch', () => {
     expect(searches[1]!.body).toMatchObject({ include_sites: ['github.com'] });
   });
 
+  it('uses the vertical engine for vertical sources', async () => {
+    stubFetch();
+    await runSearch(
+      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { request: 'LLM agents', sources: ['arxiv'] }
+    );
+    const searches = calls.filter((c) => c.url.endsWith('/search'));
+    expect(searches[0]!.body).toMatchObject({ search_service: 'arxiv', include_sites: [], exclude_sites: [] });
+  });
+
   it('keeps going when one source fails', async () => {
     stubFetch();
     const original = globalThis.fetch as ReturnType<typeof vi.fn>;

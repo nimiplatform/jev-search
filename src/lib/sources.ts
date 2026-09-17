@@ -1,45 +1,129 @@
-export type SourceId = 'hackernews' | 'reddit' | 'github' | 'x' | 'web';
+export type SourceId =
+  | 'hackernews'
+  | 'reddit'
+  | 'github'
+  | 'x'
+  | 'web'
+  | 'arxiv'
+  | 'youtube';
+
+/**
+ * How a source is queried through Search1API.
+ * - `google`: the Google path restricted with `include_sites`. Snippets carry
+ *   a "3 days ago" prefix, so freshness is measurable. Undefined site = open web.
+ * - `vertical`: one of Search1API's vertical engines (`search_service`). Used
+ *   only where Google has no equivalent coverage; most verticals return no
+ *   date and honour `time_range` loosely, so they rank on relevance alone.
+ */
+export type Lane =
+  | { kind: 'google'; site?: string }
+  | { kind: 'vertical'; service: string };
 
 export interface Source {
   id: SourceId;
   label: string;
-  /** Domain passed to Search1API `include_sites`. Undefined = open web. */
-  site?: string;
+  lane: Lane;
   /** Plain-language description handed to the judge. */
   description: string;
+  /** Yes/no question the judge answers to decide whether this source is wanted. */
+  ask: { question: string; yes: string; no: string };
+  /** Searched when the request does not single out any source. */
+  defaultOn: boolean;
 }
 
 export const SOURCES: readonly Source[] = [
   {
     id: 'hackernews',
     label: 'Hacker News',
-    site: 'news.ycombinator.com',
+    lane: { kind: 'google', site: 'news.ycombinator.com' },
     description: 'Hacker News threads and comments',
+    ask: {
+      question: 'Does the user ask for Hacker News (HN) specifically?',
+      yes: 'The request names Hacker News or HN, or asks what HN commenters think',
+      no: 'Hacker News is not mentioned or implied',
+    },
+    defaultOn: true,
   },
   {
     id: 'reddit',
     label: 'Reddit',
-    site: 'reddit.com',
+    lane: { kind: 'google', site: 'reddit.com' },
     description: 'Reddit posts and comment threads',
+    ask: {
+      question: 'Does the user ask for Reddit specifically?',
+      yes: 'The request names Reddit, a subreddit (r/…), or redditors',
+      no: 'Reddit is not mentioned or implied',
+    },
+    defaultOn: true,
   },
   {
     id: 'github',
     label: 'GitHub',
-    site: 'github.com',
+    lane: { kind: 'google', site: 'github.com' },
     description: 'GitHub repositories, issues, pull requests and releases',
+    ask: {
+      question: 'Is the user looking for code: repositories, releases, issues, pull requests or open source projects?',
+      yes: 'The request names GitHub, or asks for repos, libraries, releases, issues, PRs, or open source tools',
+      no: 'The request is about discussion, news or opinions rather than code',
+    },
+    defaultOn: true,
   },
   {
     id: 'x',
     label: 'X',
-    site: 'x.com',
+    lane: { kind: 'google', site: 'x.com' },
     description: 'Posts on X (formerly Twitter)',
+    ask: {
+      question: 'Does the user ask for X (Twitter) specifically?',
+      yes: 'The request names X, Twitter, tweets, or a specific account',
+      no: 'X / Twitter is not mentioned or implied',
+    },
+    defaultOn: true,
   },
   {
     id: 'web',
     label: 'Web',
+    lane: { kind: 'google' },
     description: 'News sites, blogs and documentation anywhere else on the web',
+    ask: {
+      question: 'Is the user asking for news coverage, articles or blog posts?',
+      yes: 'The request asks for news, coverage, articles, announcements or blog posts',
+      no: 'The request is only about community discussion, code, papers or videos',
+    },
+    defaultOn: true,
+  },
+  {
+    id: 'arxiv',
+    label: 'arXiv',
+    lane: { kind: 'vertical', service: 'arxiv' },
+    description: 'Academic papers and preprints on arXiv',
+    ask: {
+      question: 'Is the user asking for academic papers, research or preprints?',
+      yes: 'The request mentions papers, research, arXiv, studies or preprints',
+      no: 'The request is not about academic research',
+    },
+    defaultOn: false,
+  },
+  {
+    id: 'youtube',
+    label: 'YouTube',
+    lane: { kind: 'vertical', service: 'youtube' },
+    description: 'Videos on YouTube',
+    ask: {
+      question: 'Is the user asking for videos?',
+      yes: 'The request mentions videos, YouTube, talks, tutorials to watch, or channels',
+      no: 'The request is not about video content',
+    },
+    defaultOn: false,
   },
 ];
+
+export const DEFAULT_SOURCE_IDS = SOURCES.filter((s) => s.defaultOn).map((s) => s.id);
+
+/** Sites that the open-web lane excludes so it does not duplicate the others. */
+export const RESTRICTED_SITES = SOURCES.flatMap((s) =>
+  s.lane.kind === 'google' && s.lane.site ? [s.lane.site] : []
+);
 
 export const SOURCE_IDS = SOURCES.map((s) => s.id) as readonly SourceId[];
 

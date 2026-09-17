@@ -3,8 +3,9 @@ import { freshnessScore, parseAgeHours, stripAgePrefix } from './freshness';
 import type { RankedItem } from './rank';
 import { search, type Search1ApiConfig } from './search1api';
 import {
+  DEFAULT_SOURCE_IDS,
   DEFAULT_WINDOW,
-  SOURCES,
+  RESTRICTED_SITES,
   SOURCE_IDS,
   sourceById,
   windowById,
@@ -77,7 +78,7 @@ export async function runSearch(
     const wanted = SOURCE_IDS.filter(
       (id) => intent.sources[id] >= SOURCE_PROB_THRESHOLD
     );
-    sources = wanted.length > 0 ? wanted : [...SOURCE_IDS];
+    sources = wanted.length > 0 ? wanted : [...DEFAULT_SOURCE_IDS];
   }
 
   const query = candidates[intent.query.index] ?? candidates[0]!;
@@ -85,19 +86,19 @@ export async function runSearch(
 
   // 2. Fan out one engine call per source.
   const t1 = performance.now();
-  const restrictedSites = SOURCES.flatMap((s) => (s.site ? [s.site] : []));
   const settled = await Promise.allSettled(
     sources.map((id) => {
-      const source = sourceById(id);
+      const { lane } = sourceById(id);
+      const params =
+        lane.kind === 'vertical'
+          ? { service: lane.service }
+          : {
+              includeSites: lane.site ? [lane.site] : [],
+              excludeSites: lane.site ? [] : RESTRICTED_SITES,
+            };
       return search(
         deps.search1api,
-        {
-          query,
-          timeRange: win.timeRange,
-          includeSites: source.site ? [source.site] : [],
-          excludeSites: source.site ? [] : restrictedSites,
-          maxResults: RESULTS_PER_SOURCE,
-        },
+        { query, timeRange: win.timeRange, maxResults: RESULTS_PER_SOURCE, ...params },
         signal
       );
     })

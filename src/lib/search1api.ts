@@ -5,6 +5,8 @@ export interface Search1ApiConfig {
 
 export interface SearchParams {
   query: string;
+  /** Search1API `search_service`; defaults to google. */
+  service?: string;
   timeRange: 'day' | 'week' | 'month';
   includeSites?: string[];
   excludeSites?: string[];
@@ -17,6 +19,20 @@ export interface RawResult {
   snippet: string;
 }
 
+const ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', middot: '·', hellip: '…',
+  mdash: '—', ndash: '–', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', laquo: '«', raquo: '»',
+};
+
+/** Snippets come back with HTML entities left in; decode the common ones. */
+export function decodeEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/&([a-z]+);/gi, (match, name: string) => ENTITIES[name.toLowerCase()] ?? match)
+    .replace(/\s{2,}/g, ' ');
+}
+
 export class Search1ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -27,8 +43,9 @@ export class Search1ApiError extends Error {
 }
 
 /**
- * One POST /search against Search1API's Google path. Source restriction is
- * done with `include_sites` / `exclude_sites`, recency with `time_range`.
+ * One POST /search. On the Google path, source restriction is done with
+ * `include_sites` / `exclude_sites`; vertical engines are picked with
+ * `service`. Recency is `time_range` in both cases.
  */
 export async function search(
   config: Search1ApiConfig,
@@ -44,7 +61,7 @@ export async function search(
     },
     body: JSON.stringify({
       query: params.query,
-      search_service: 'google',
+      search_service: params.service ?? 'google',
       time_range: params.timeRange,
       max_results: params.maxResults ?? 8,
       include_sites: params.includeSites ?? [],
@@ -66,5 +83,9 @@ export async function search(
         typeof (r as RawResult).link === 'string' &&
         typeof (r as RawResult).title === 'string'
     )
-    .map((r) => ({ title: r.title, link: r.link, snippet: r.snippet ?? '' }));
+    .map((r) => ({
+      title: decodeEntities(r.title),
+      link: r.link,
+      snippet: decodeEntities(r.snippet ?? ''),
+    }));
 }

@@ -25,6 +25,7 @@ const FILLER_PHRASES = [
   /^(any\s+(news|updates?|discussion|chatter|talk)\s+(on|about|around))\s+/i,
   /^(show\s+me|find\s+me|find|search\s+for|search|look\s+up|look\s+for|give\s+me|tell\s+me\s+about|i\s+want\s+to\s+(see|know|find))\s+/i,
   /^(discussions?|threads?|posts?|news|updates?|reactions?|opinions?|takes?)\s+(about|on|around|regarding)\s+/i,
+  /^(videos?|clips?|talks?|tutorials?|papers?|research|preprints?|articles?|blog\s*posts?|repos?|repositories|projects?|tools?|libraries|libs?)\s+(about|on|for|of|around|regarding)\s+/i,
   /^(帮我|请|给我)?(找找|找一下|找|搜索|搜一下|搜|查一下|查查|查|看看|看一下)\s*/,
   /^(大家|开发者|社区)(怎么看|在讨论|对.*的看法|怎么说)\s*/,
   /^(about|on|regarding|around|of|for|with|to)\s+/i,

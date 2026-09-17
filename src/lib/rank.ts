@@ -68,15 +68,21 @@ export function titleKey(title: string): string {
     .join(' ');
 }
 
+const TRACKING_PARAM = /^(utm_|ref$|ref_|fbclid|gclid|igshid|share_id|rdt|si$|feature$|lang$|s$|t$)/i;
+
+/** Host + path + the query params that identify content (YouTube's `v`), minus tracking noise. */
 export function canonicalUrl(url: string): string {
   try {
     const u = new URL(url);
-    u.hash = '';
-    u.search = '';
     let host = u.hostname.toLowerCase().replace(/^www\./, '');
     if (host === 'twitter.com') host = 'x.com';
     const path = u.pathname.replace(/\/+$/, '').toLowerCase();
-    return `${host}${path}`;
+    const params = [...u.searchParams.entries()]
+      .filter(([k]) => !TRACKING_PARAM.test(k))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&');
+    return `${host}${path}${params ? `?${params}` : ''}`;
   } catch {
     return url;
   }

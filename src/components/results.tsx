@@ -18,8 +18,9 @@ function formatAge(hours: number | null): string | null {
 function displayUrl(url: string): string {
   try {
     const u = new URL(url);
-    const path = u.pathname.replace(/\/$/, '');
-    return `${u.hostname.replace(/^www\./, '')}${path.length > 40 ? `${path.slice(0, 40)}…` : path}`;
+    const id = u.searchParams.get('id') ?? u.searchParams.get('v');
+    const path = u.pathname.replace(/\/$/, '') + (id ? `?${u.searchParams.has('id') ? 'id' : 'v'}=${id}` : '');
+    return `${u.hostname.replace(/^www\./, '')}${path.length > 48 ? `${path.slice(0, 48)}…` : path}`;
   } catch {
     return url;
   }

@@ -9,6 +9,8 @@ const RELATIVE_RE =
   /^\s*(\d+)\s+(minute|min|hour|hr|day|week|month|year)s?\s+ago\b/i;
 const ABSOLUTE_RE =
   /^\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})\b/i;
+/** Vertical engines (arXiv) put an ISO date somewhere in a " | "-joined snippet. */
+const ISO_RE = /(?:^|\|\s*)(\d{4}-\d{2}-\d{2})(?:\s*\||\s|$)/;
 
 const UNIT_HOURS: Record<string, number> = {
   minute: 1 / 60,
@@ -35,6 +37,11 @@ export function parseAgeHours(snippet: string, now = Date.now()): number | null 
     const ts = Date.parse(`${abs[1]!} UTC`);
     if (!Number.isNaN(ts)) return Math.max(0, (now - ts) / 3_600_000);
   }
+  const iso = ISO_RE.exec(snippet);
+  if (iso) {
+    const ts = Date.parse(`${iso[1]!}T00:00:00Z`);
+    if (!Number.isNaN(ts)) return Math.max(0, (now - ts) / 3_600_000);
+  }
   return null;
 }
 
@@ -43,7 +50,7 @@ export function stripAgePrefix(snippet: string): string {
   return snippet
     .replace(RELATIVE_RE, '')
     .replace(ABSOLUTE_RE, '')
-    .replace(/^\s*(\.\.\.|…)\s*/, '')
+    .replace(/^\s*(\.\.\.|…|·|-)\s*/, '')
     .trim();
 }
 

@@ -105,11 +105,8 @@ export async function inferIntent(
   for (const s of SOURCES) {
     questions[`source_${s.id}`] = {
       type: 'noul',
-      instructions: `Does the user in \`request\` specifically want results from ${s.label} (${s.description})?`,
-      criteria: {
-        true: `The request names ${s.label} or clearly asks for the kind of content only ${s.label} has`,
-        false: `The request does not mention ${s.label} and would be satisfied by results from anywhere`,
-      },
+      instructions: `About \`request\`: ${s.ask.question}`,
+      criteria: { true: s.ask.yes, false: s.ask.no },
     };
   }
 

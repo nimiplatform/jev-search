@@ -24,10 +24,12 @@ describe('titleKey', () => {
 
 describe('canonicalUrl', () => {
   it('normalizes host, trailing slash and query', () => {
-    expect(canonicalUrl('https://www.reddit.com/r/bun/comments/1/x/?utm=1#top')).toBe(
+    expect(canonicalUrl('https://www.reddit.com/r/bun/comments/1/x/?utm_source=1#top')).toBe(
       'reddit.com/r/bun/comments/1/x'
     );
     expect(canonicalUrl('https://twitter.com/a/status/1')).toBe('x.com/a/status/1');
+    expect(canonicalUrl('https://www.youtube.com/watch?v=abc&feature=share')).toBe('youtube.com/watch?v=abc');
+    expect(canonicalUrl('https://www.youtube.com/watch?v=abc')).not.toBe(canonicalUrl('https://www.youtube.com/watch?v=xyz'));
   });
 });
 

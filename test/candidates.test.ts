@@ -18,6 +18,10 @@ describe('buildCandidates', () => {
   it('handles Chinese requests', () => {
     expect(buildCandidates('最近大家怎么看 Bun 1.3')[1]).toBe('Bun 1.3');
   });
+  it('strips content-type prefixes', () => {
+    expect(buildCandidates('videos about Bun 1.3')[1]).toBe('Bun 1.3');
+    expect(buildCandidates('new papers on LLM agents this week')[1]).toBe('LLM agents');
+  });
   it('returns one candidate when nothing to strip', () => {
     expect(buildCandidates('Bun 1.3')).toEqual(['Bun 1.3']);
   });
