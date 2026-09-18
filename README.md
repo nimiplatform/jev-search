@@ -49,7 +49,7 @@ Tests mock providers and do not need API keys. Building does not call either pro
 The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers and KV enabled.
 
 1. Run `pnpm exec wrangler login`.
-2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the absolute social-card URLs in `src/routes/__root.tsx` and `src/routes/index.tsx` to match your deployment.
+2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the absolute social-card URLs in `src/routes/__root.tsx` and `src/routes/index.tsx` to match your deployment. Remove or replace the Cloudflare Web Analytics snippet in `src/routes/__root.tsx`; the committed token belongs to the hosted demo.
 3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
 4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap. `CACHE` and `SEARCH_RATE_LIMIT` are optional; regenerate types after changing bindings.
 5. Upload your own provider keys and deploy:
@@ -83,7 +83,9 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 
 - Search requests go to TypeSafe and Search1API. TypeSafe also receives result titles and snippets for relevance scoring. Search1API queries the selected engines.
 - Cloudflare KV stores query-derived cache keys and result snippets for the configured TTL. Removing `CACHE` disables this cache.
-- The rate limiter uses the client IP. Cloudflare request logging is enabled separately in the configuration.
+- The application does not record search text, inferred queries or result clicks in its own analytics.
+- The hosted demo loads a [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/) beacon for page views, visits, referrers, country, browser and page-load metrics. It does not use cookies and does not record URL query strings, so search terms in `/search?q=` are not stored there. Self-hosters can remove the snippet in `src/routes/__root.tsx`.
+- The rate limiter uses the client IP. Cloudflare Workers request logging is enabled separately in the configuration; invocation logs include request URLs, which may contain the search query.
 - The page loads a font from Google Fonts. Result links lead to third-party sites.
 - Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering and Newest sorting prefer Search1API's `published_date`, falling back to snippet dates when unavailable. Day-only dates are displayed as calendar dates and filtered with allowance for the unknown time of day; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
 
