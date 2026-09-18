@@ -124,7 +124,7 @@ function SearchPage() {
                   </div>
                 )}
               />
-              <Results clusters={clusters} request={params.q} streaming={state.phase !== 'done'} />
+              <Results clusters={clusters} streaming={state.phase !== 'done'} />
             </div>
           </div>
         )}

@@ -3,7 +3,6 @@ import { formatPublicationAge } from '@/lib/freshness';
 import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
-import { feedbackFn, type FeedbackEvent } from '@/server/search';
 import { SourceIcon } from './source-icon';
 
 function displayUrl(url: string): string {
@@ -17,23 +16,14 @@ function displayUrl(url: string): string {
   }
 }
 
-function send(event: FeedbackEvent) {
-  feedbackFn({ data: event }).catch(() => undefined);
-}
-
 function ResultRow({
   item,
-  rank,
-  request,
   minor,
 }: {
   item: RankedItem;
-  rank: number;
-  request: string;
   minor?: boolean;
 }) {
   const age = formatPublicationAge(item);
-  const base = { request, url: item.url, source: item.source, relevance: item.relevance, rank };
 
   return (
     <article className={cn('group', minor ? 'pl-4 border-l' : '')}>
@@ -53,7 +43,6 @@ function ResultRow({
           minor ? 'text-base' : 'text-lg'
         )}
         href={item.url}
-        onClick={() => send({ kind: 'click', ...base })}
         rel="noreferrer"
         target="_blank"
       >
@@ -85,11 +74,9 @@ export const OFF_TOPIC = 0.3;
 
 export function Results({
   clusters,
-  request,
   streaming,
 }: {
   clusters: Cluster[];
-  request: string;
   streaming: boolean;
 }) {
   const [showOffTopic, setShowOffTopic] = useState(false);
@@ -105,13 +92,12 @@ export function Results({
     );
   }
 
-  let rank = 0;
   const render = (list: Cluster[]) =>
     list.map((cluster) => (
       <li className="enter flex flex-col gap-2" key={cluster.lead.id}>
-        <ResultRow item={cluster.lead} rank={++rank} request={request} />
+        <ResultRow item={cluster.lead} />
         {cluster.others.map((item) => (
-          <ResultRow item={item} key={item.id} minor rank={++rank} request={request} />
+          <ResultRow item={item} key={item.id} minor />
         ))}
       </li>
     ));
@@ -134,6 +120,4 @@ export function Results({
     </>
   );
 }
-
-
 

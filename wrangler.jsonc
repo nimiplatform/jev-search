@@ -19,8 +19,6 @@
   }],
   // Self-hosters: create a namespace and replace this public resource ID.
   "kv_namespaces": [{ "binding": "CACHE", "id": "ff6092d31fbf4f5999be145d5dd8e84d" }],
-  // Optional. Remove this binding to disable search and click analytics.
-  "analytics_engine_datasets": [{ "binding": "FEEDBACK", "dataset": "jev_search_feedback" }],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "invocation_logs": true }

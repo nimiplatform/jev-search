@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { askStream, type AskEvent } from '@/lib/pipeline';
 import { validateAskRequest } from '@/lib/validate';
 import { getEnv } from '@/server/env.server';
-import { writeAnalytics } from '@/server/analytics';
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -67,22 +66,9 @@ export const Route = createFileRoute('/api/ask')({
           async start(controller) {
             const send = (event: AskEvent | { type: 'error'; message: string }) =>
               controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-            let intentLine: string[] = [];
-            let count = 0;
             try {
               for await (const event of askStream(deps, { request: data.q, window: data.w, sources: data.s }, signal)) {
                 send(event);
-                if (event.type === 'intent') {
-                  intentLine = [event.query, event.window, event.sources.join(',')];
-                } else if (event.type === 'lane') {
-                  count += event.items.length;
-                } else if (event.type === 'done') {
-                  writeAnalytics(env.FEEDBACK, {
-                    indexes: ['ask'],
-                    blobs: ['ask', data.q, ...intentLine, data.w ? 'user' : 'inferred', data.s ? 'user' : 'inferred'],
-                    doubles: [count, event.totalMs, event.tokens],
-                  });
-                }
               }
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Search failed';

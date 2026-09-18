@@ -1,10 +1,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Results } from '@/components/results';
 import type { RankedItem } from '@/lib/rank';
-
-vi.mock('@/server/search', () => ({ feedbackFn: vi.fn() }));
 
 function renderResult(publication: Pick<RankedItem, 'publishedDate' | 'ageHours'>): string {
   const lead: RankedItem = {
@@ -13,7 +11,7 @@ function renderResult(publication: Pick<RankedItem, 'publishedDate' | 'ageHours'
     position: 1, engines: ['google'], ...publication,
   };
   return renderToStaticMarkup(createElement(Results, {
-    clusters: [{ lead, others: [] }], request: 'test', streaming: false,
+    clusters: [{ lead, others: [] }], streaming: false,
   }));
 }
 

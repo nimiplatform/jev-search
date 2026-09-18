@@ -46,14 +46,13 @@ Tests mock providers and do not need API keys. Building does not call either pro
 
 ## Deploy to Cloudflare Workers
 
-The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers, KV and optionally Analytics Engine enabled.
+The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers and KV enabled.
 
 1. Run `pnpm exec wrangler login`.
 2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the absolute social-card URLs in `src/routes/__root.tsx` and `src/routes/index.tsx` to match your deployment.
 3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
-4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap.
-5. Optionally rename the Analytics Engine dataset, or remove its binding to disable application analytics. Regenerate types after changing bindings. `CACHE`, `FEEDBACK` and `SEARCH_RATE_LIMIT` are optional.
-6. Upload your own provider keys and deploy:
+4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap. `CACHE` and `SEARCH_RATE_LIMIT` are optional; regenerate types after changing bindings.
+5. Upload your own provider keys and deploy:
 
 ```bash
 pnpm exec wrangler secret put SEARCH1API_API_KEY
@@ -84,7 +83,7 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 
 - Search requests go to TypeSafe and Search1API. TypeSafe also receives result titles and snippets for relevance scoring. Search1API queries the selected engines.
 - Cloudflare KV stores query-derived cache keys and result snippets for the configured TTL. Removing `CACHE` disables this cache.
-- With `FEEDBACK` enabled, Analytics Engine records search text, inferred query, selected sources and time range, counts, timings and token usage. Result-click events include search text, destination URL, source, relevance and rank. These records are **not anonymous query data**. The application does not add IP addresses to those events; the rate limiter uses the client IP. Cloudflare request logging is enabled separately in the configuration.
+- The rate limiter uses the client IP. Cloudflare request logging is enabled separately in the configuration.
 - The page loads a font from Google Fonts. Result links lead to third-party sites.
 - Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering and Newest sorting prefer Search1API's `published_date`, falling back to snippet dates when unavailable. Day-only dates are displayed as calendar dates and filtered with allowance for the unknown time of day; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
 
@@ -101,7 +100,7 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 | `src/lib/rank.ts`, `merge.ts` | Ordering, grouping and URL deduplication |
 | `src/lib/use-ask.ts` | Client stream consumer |
 | `src/routes/api/ask.ts` | Search endpoint, origin validation and rate limiting |
-| `src/server/` | Cloudflare bindings and analytics |
+| `src/server/` | Cloudflare bindings |
 | `test/` | Provider-independent regression tests |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [SECURITY.md](SECURITY.md) for vulnerability reporting.

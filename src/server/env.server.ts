@@ -4,7 +4,6 @@ export function getEnv() {
   // Optional bindings may be removed by self-hosters without changing application code.
   const env: typeof workerEnv & {
     CACHE?: KVNamespace;
-    FEEDBACK?: AnalyticsEngineDataset;
     SEARCH_RATE_LIMIT?: RateLimit;
   } = workerEnv;
   if (!env.SEARCH1API_API_KEY) {
