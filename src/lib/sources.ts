@@ -12,7 +12,7 @@ export type SourceId =
   | 'wechat';
 
 /**
- * One Search1API `/search` call. `service` is the engine; `site` restricts a
+ * One Search1API `/search` or `/news` call. `service` is the engine; `site` restricts a
  * general engine with `include_sites`. A source runs all of its lanes in
  * parallel and merges them, so one engine going down or drifting does not
  * take the source with it, and a hit on two engines outranks a hit on one.
@@ -32,12 +32,6 @@ export interface Lane {
 
 /** General engines that search the whole web and need `exclude_sites` on the open-web source. */
 export const GENERAL_ENGINES = new Set(['google', 'duckduckgo', 'bing', 'yahoo']);
-
-const COMMUNITY_ENGINES = ['google', 'duckduckgo'] as const;
-
-function siteLanes(site?: string): Lane[] {
-  return COMMUNITY_ENGINES.map((service) => (site ? { service, site } : { service }));
-}
 
 export interface Source {
   id: SourceId;
@@ -79,7 +73,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'hackernews',
     label: 'Hacker News',
-    lanes: siteLanes('news.ycombinator.com'),
+    lanes: [{ service: 'google', site: 'news.ycombinator.com' }, { service: 'hackernews' }],
     description: 'Hacker News threads and comments',
     ask: {
       question: 'Would Hacker News threads fit this request?',
@@ -91,7 +85,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'reddit',
     label: 'Reddit',
-    lanes: siteLanes('reddit.com'),
+    lanes: [{ service: 'google', site: 'reddit.com' }, { service: 'reddit' }],
     description: 'Reddit posts and comment threads',
     ask: {
       question: 'Would Reddit threads fit this request?',
@@ -103,7 +97,7 @@ export const SOURCES: readonly Source[] = [
   {
     id: 'github',
     label: 'GitHub',
-    lanes: siteLanes('github.com'),
+    lanes: [{ service: 'google', site: 'github.com' }, { service: 'github' }],
     description: 'GitHub repositories, issues, pull requests and releases',
     ask: {
       question: 'Is the user looking for code: repositories, releases, issues, pull requests or open source projects?',

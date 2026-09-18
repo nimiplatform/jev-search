@@ -41,9 +41,9 @@ function stubFetch(results?: Record<string, unknown>[]) {
         return jsonResponse({ model: 'jev-1.13.0', answers, usage: { input_tokens: 100, output_tokens: 1 } });
       }
 
-      if (url.endsWith('/search')) {
+      if (url.endsWith('/search') || url.endsWith('/news')) {
         if (results) return jsonResponse({ results });
-        if (body.search_service === 'duckduckgo') {
+        if (body.search_service === 'reddit') {
           return jsonResponse({
             results: [
               { title: 'Old thread', link: 'https://www.reddit.com/r/bun/old', snippet: 'Oct 10, 2025 · stale' },
@@ -112,8 +112,9 @@ describe('runSearch', () => {
     expect(out.sources).toEqual(['reddit']);
     expect(out.query).toBe('Bun 1.3');
 
-    const searchCalls = calls.filter((c) => c.url.endsWith('/search') && (c.body.include_sites as string[]).length > 0);
-    expect(searchCalls.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
+    const searchCalls = calls.filter((c) => c.url.endsWith('/search') && c.body.query === 'Bun 1.3' && c.body.time_range === 'week');
+    expect(searchCalls.map((c) => c.body.search_service).sort()).toEqual(['google', 'reddit']);
+    expect(searchCalls.find((c) => c.body.search_service === 'reddit')!.body).toMatchObject({ include_sites: [], exclude_sites: [] });
     expect(searchCalls[0]!.body).toMatchObject({
       query: 'Bun 1.3',
       time_range: 'week',
@@ -121,12 +122,12 @@ describe('runSearch', () => {
     });
 
     // Lanes folded by URL: the shared URL is one row with both engines; the
-    // stale duckduckgo row (Oct 2025) is outside the window and dropped.
+    // stale reddit row (Oct 2025) is outside the window and dropped.
     expect(out.items).toHaveLength(2);
     expect(out.items[0]).toMatchObject({ relevance: 0.95, ageHours: 72, snippet: 'runtime' });
-    expect(out.items[0]!.engines.sort()).toEqual(['duckduckgo', 'google']);
+    expect(out.items[0]!.engines.sort()).toEqual(['google', 'reddit']);
     expect(out.items[1]).toMatchObject({ relevance: 0.05, ageHours: 24, engines: ['google'] });
-    expect(out.lanes.find((l) => l.engine === 'duckduckgo')).toMatchObject({ stale: 1 });
+    expect(out.lanes.find((l) => l.engine === 'reddit')).toMatchObject({ stale: 1 });
     expect(out.tokens).toBe(300);
   });
 
@@ -141,11 +142,29 @@ describe('runSearch', () => {
     // 4 lanes + 1 speculative google call (dropped: the window is 24h).
     const searches = calls.filter((c) => c.url.endsWith('/search'));
     expect(searches).toHaveLength(5);
-    const web = searches.filter((c) => (c.body.include_sites as string[]).length === 0 && 'time_range' in c.body);
-    const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com');
+    const web = searches.filter((c) => ['google', 'duckduckgo'].includes(String(c.body.search_service)) && (c.body.include_sites as string[]).length === 0 && 'time_range' in c.body);
+    const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com' || c.body.search_service === 'github');
     expect(web.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
     expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com'] });
-    expect(gh.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
+    expect(gh.map((c) => c.body.search_service).sort()).toEqual(['github', 'google']);
+  });
+
+  it('searches Hacker News through Google site and the native news endpoint only', async () => {
+    stubFetch([{ title: 'SQLite discussion', link: 'https://news.ycombinator.com/item?id=1', snippet: 'SQLite' }]);
+    const out = await runSearch(
+      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { request: 'SQLite', sources: ['hackernews'], window: '30d' }
+    );
+    const searches = calls.filter((c) => c.url.endsWith('/search') || c.url.endsWith('/news'));
+    expect(searches).toHaveLength(2);
+    expect(searches.find((c) => c.url.endsWith('/news'))!.body).toMatchObject({
+      search_service: 'hackernews', time_range: 'month', include_sites: [], exclude_sites: [],
+    });
+    expect(searches.find((c) => c.url.endsWith('/search'))!.body).toMatchObject({
+      search_service: 'google', include_sites: ['news.ycombinator.com'],
+    });
+    expect(out.sources).toEqual(['hackernews']);
+    expect(out.items[0]!.engines.sort()).toEqual(['google', 'hackernews']);
   });
 
   it('uses the vertical engine for vertical sources', async () => {
@@ -186,8 +205,8 @@ describe('runSearch', () => {
     stubFetch();
     const original = globalThis.fetch as ReturnType<typeof vi.fn>;
     vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body ?? '{}')) as { include_sites?: string[] };
-      if (String(input).endsWith('/search') && body.include_sites?.[0] === 'github.com') {
+      const body = JSON.parse(String(init?.body ?? '{}')) as { include_sites?: string[]; search_service?: string };
+      if (String(input).endsWith('/search') && (body.include_sites?.[0] === 'github.com' || body.search_service === 'github')) {
         return new Response('upstream broke', { status: 502 });
       }
       return original(input, init);
@@ -196,7 +215,7 @@ describe('runSearch', () => {
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
       { request: 'Bun 1.3', sources: ['reddit', 'github'] }
     );
-    expect(out.errors.map((e) => e.engine).sort()).toEqual(['duckduckgo', 'google']);
+    expect(out.errors.map((e) => e.engine).sort()).toEqual(['github', 'google']);
     expect(out.errors.every((e) => e.source === 'github' && e.message === 'upstream broke')).toBe(true);
     expect(out.totalMs).toBeGreaterThanOrEqual(0);
     expect(out.items.map((i) => i.source)).toEqual(['reddit', 'reddit']);

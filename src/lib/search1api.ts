@@ -45,7 +45,7 @@ export class Search1ApiError extends Error {
 }
 
 /**
- * One POST /search. On the Google path, source restriction is done with
+ * One POST /search, or /news for Hacker News. Source restriction is done with
  * `include_sites` / `exclude_sites`; vertical engines are picked with
  * `service`. Recency is `time_range` in both cases.
  */
@@ -60,7 +60,7 @@ export async function search(
   const base = (config.baseUrl ?? 'https://api.search1api.com').replace(/\/$/, '');
   const timeout = AbortSignal.timeout(LANE_TIMEOUT_MS);
   const laneSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
-  const response = await fetch(`${base}/search`, {
+  const response = await fetch(`${base}/${params.service === 'hackernews' ? 'news' : 'search'}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.apiKey}`,

@@ -11,7 +11,7 @@ Built by Search1API. This is an independent project, not an official TypeSafe pr
 ## How it works
 
 1. **Understand.** Jev answers typed questions about your request. The application uses those judgments to choose a query, sources and a time range. You can override the source and time chips.
-2. **Search.** Google and DuckDuckGo search the open web. Hacker News, Reddit and GitHub use site restrictions on both engines. X, arXiv, YouTube, Wikipedia, IMDb and WeChat use vertical engines. Calls run concurrently; one failed engine does not discard another engine's results.
+2. **Search.** Google and DuckDuckGo search the open web. Hacker News, Reddit and GitHub each combine a Google site-restricted search with their dedicated engine (Hacker News uses the news endpoint). X, arXiv, YouTube, Wikipedia, IMDb and WeChat use vertical engines. Calls run concurrently; one failed engine does not discard another engine's results.
 3. **Rank.** Jev scores each result for relevance. Results are merged by URL, ordered by relevance, engine agreement and original rank, and streamed as each lane finishes. Lower-scoring results are grouped separately. A failed source shows a warning rather than a zero-result count.
 
 Try “TypeSafe Jev API documentation and examples”, “Jev discussions on Hacker News this week”, or “Videos about TypeSafe Jev this month”. These are plain-language requests, not hardcoded filters. Model choices and provider coverage can vary.
