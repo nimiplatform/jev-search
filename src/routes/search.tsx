@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { Filters } from '@/components/filters';
+import { RepositoryLink } from '@/components/repository-link';
 import { Results } from '@/components/results';
 import { Working } from '@/components/working';
 import { SearchBox } from '@/components/search-box';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
@@ -43,8 +45,12 @@ function Header({ q }: { q: string }) {
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
       <div className="relative mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
         <Wordmark size="sm" />
-        <div className="w-full min-w-0 max-w-2xl sm:flex-1">
+        <div className="order-last w-full min-w-0 max-w-2xl sm:order-none sm:flex-1">
           <SearchBox initial={q} compact key={q} />
+        </div>
+        <div className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          <RepositoryLink />
         </div>
       </div>
     </header>

@@ -22,7 +22,7 @@ const EXAMPLES = [
 
 function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 pb-12 pt-20 sm:py-20">
       <h1 className="vt-wordmark display text-center text-[clamp(2.75rem,6vw,4rem)] leading-none tracking-[-0.01em]">
         Jev <span className="text-primary">Search</span>
       </h1>

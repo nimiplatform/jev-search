@@ -1,5 +1,7 @@
 import { HeadContent, Link, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { RepositoryLink } from '@/components/repository-link';
+import { ThemeToggle, themeScript } from '@/components/theme-toggle';
 import appCss from '../styles.css?url';
 
 const TITLE = 'Jev Search — Picks where to search. Ranks what comes back.';
@@ -61,14 +63,42 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
   const isHome = useRouterState({ select: (state) => state.location.pathname === '/' });
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <HeadContent />
       </head>
       <body className="min-h-dvh flex flex-col">
+        {isHome && (
+          <div className="absolute right-4 top-4 flex items-center gap-1 sm:right-6">
+            <ThemeToggle />
+            <RepositoryLink />
+          </div>
+        )}
         <div className="flex flex-1 flex-col">{children}</div>
         <footer className="border-t px-4 py-4 text-xs text-muted-foreground">
           <div className={isHome ? 'mx-auto max-w-5xl text-center' : 'mx-auto max-w-5xl'}>
+            <nav
+              aria-label="Jev projects and community"
+              className={`mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm ${isHome ? 'justify-center' : ''}`}
+            >
+              <a
+                className="inline-flex min-h-11 items-center text-foreground/80 hover:text-primary-text hover:underline"
+                href="https://github.com/fatwang2/awesome-jev"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Explore more Jev projects
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center text-foreground/80 hover:text-primary-text hover:underline"
+                href="https://www.reddit.com/r/typesafe_jev/"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Join the Jev community on Reddit
+              </a>
+            </nav>
             <span>
               Understanding and ranking by{' '}
               <a className="text-foreground/80 hover:underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
@@ -79,15 +109,6 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
                 Search1API
               </a>
               {' · '}no generated answers{' · '}your query is sent to both
-              {' · '}
-              <a
-                className="whitespace-nowrap text-foreground/80 hover:underline"
-                href="https://github.com/superagents-lab/jev-search"
-                rel="noreferrer"
-                target="_blank"
-              >
-                GitHub
-              </a>
             </span>
           </div>
         </footer>
