@@ -1,6 +1,7 @@
 export type SourceId =
   | 'google'
   | 'duckduckgo'
+  | 'yandex'
   | 'hackernews'
   | 'reddit'
   | 'github'
@@ -29,9 +30,6 @@ export interface Lane {
   /** True for catalogue engines that want a name or title, not a sentence (imdb). */
   entityQuery?: boolean;
 }
-
-/** General engines that search the whole web and need `exclude_sites` on the open-web source. */
-export const GENERAL_ENGINES = new Set(['google', 'duckduckgo', 'bing', 'yahoo']);
 
 export interface Source {
   id: SourceId;
@@ -63,6 +61,18 @@ export const SOURCES: readonly Source[] = [
     label: 'DuckDuckGo',
     lanes: [{ service: 'duckduckgo' }],
     description: 'DuckDuckGo web results: a second, independent view of the open web',
+    ask: {
+      question: 'Would general web pages (news, articles, blogs, docs) help answer this request?',
+      yes: 'The request is a general question, or asks for news, articles, coverage, docs or blog posts',
+      no: 'The request only makes sense on a specific platform such as Reddit, GitHub, arXiv, YouTube or IMDb',
+    },
+    defaultOn: true,
+  },
+  {
+    id: 'yandex',
+    label: 'Yandex',
+    lanes: [{ service: 'yandex' }],
+    description: 'Yandex web results: a third, independent view of the open web, including Russian-language pages',
     ask: {
       question: 'Would general web pages (news, articles, blogs, docs) help answer this request?',
       yes: 'The request is a general question, or asks for news, articles, coverage, docs or blog posts',
@@ -181,11 +191,6 @@ export const SOURCES: readonly Source[] = [
 ];
 
 export const DEFAULT_SOURCE_IDS = SOURCES.filter((s) => s.defaultOn).map((s) => s.id);
-
-/** Sites that the open-web lane excludes so it does not duplicate the others. */
-export const RESTRICTED_SITES = [
-  ...new Set(SOURCES.flatMap((s) => s.lanes.flatMap((l) => (l.site ? [l.site] : [])))),
-];
 
 export const SOURCE_IDS = SOURCES.map((s) => s.id) as readonly SourceId[];
 

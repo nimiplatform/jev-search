@@ -131,7 +131,7 @@ describe('runSearch', () => {
     expect(out.tokens).toBe(300);
   });
 
-  it('respects explicit window and sources and excludes restricted sites for web', async () => {
+  it('respects explicit window and sources', async () => {
     stubFetch();
     const out = await runSearch(
       { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
@@ -145,7 +145,7 @@ describe('runSearch', () => {
     const web = searches.filter((c) => ['google', 'duckduckgo'].includes(String(c.body.search_service)) && (c.body.include_sites as string[]).length === 0 && 'time_range' in c.body);
     const gh = searches.filter((c) => (c.body.include_sites as string[])[0] === 'github.com' || c.body.search_service === 'github');
     expect(web.map((c) => c.body.search_service).sort()).toEqual(['duckduckgo', 'google']);
-    expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: ['news.ycombinator.com', 'reddit.com', 'github.com'] });
+    expect(web[0]!.body).toMatchObject({ time_range: 'day', exclude_sites: [] });
     expect(gh.map((c) => c.body.search_service).sort()).toEqual(['github', 'google']);
   });
 

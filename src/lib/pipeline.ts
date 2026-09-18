@@ -7,8 +7,6 @@ import { search, type RawResult, type Search1ApiConfig, type SearchParams } from
 import {
   DEFAULT_SOURCE_IDS,
   DEFAULT_WINDOW,
-  GENERAL_ENGINES,
-  RESTRICTED_SITES,
   SOURCE_IDS,
   sourceById,
   windowById,
@@ -118,7 +116,7 @@ export async function* askStream(
   // 0. Speculate: Google with the words as typed, fired alongside the judge.
   //    Reused when the judge keeps those words and wants no time window,
   //    which is most factual questions; otherwise it is simply dropped.
-  const speculative: SearchParams = { query: candidates[0]!, service: 'google', maxResults: RESULTS_PER_LANE, excludeSites: RESTRICTED_SITES };
+  const speculative: SearchParams = { query: candidates[0]!, service: 'google', maxResults: RESULTS_PER_LANE };
   const speculativePromise = input.sources && !input.sources.includes('google')
     ? null
     : runSearch(speculative).catch(() => null);
@@ -170,7 +168,6 @@ export async function* askStream(
       timeRange: lane.timeFilter === false ? undefined : win.timeRange,
       maxResults: RESULTS_PER_LANE,
       includeSites: lane.site ? [lane.site] : [],
-      excludeSites: !lane.site && GENERAL_ENGINES.has(lane.service) ? RESTRICTED_SITES : [],
     };
     const sameAsSpeculative =
       speculativePromise !== null &&
