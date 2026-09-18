@@ -6,7 +6,9 @@ export interface RankedItem {
   title: string;
   url: string;
   snippet: string;
-  /** Hours since publication, when the snippet carried a date. */
+  /** Normalized API date, retaining its original precision. */
+  publishedDate?: string;
+  /** Hours since publication; day-only dates use a UTC midnight estimate. */
   ageHours: number | null;
   /** Judge's probability that the item is about what the user asked. 0 until `ranked`. */
   relevance: number;

@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runSearch } from '@/lib/pipeline';
+import { memoryCache } from '@/lib/cache';
+import { compareItems } from '@/lib/rank';
 
 type Call = { url: string; body: Record<string, unknown> };
 const calls: Call[] = [];
@@ -11,7 +13,7 @@ function jsonResponse(data: unknown) {
   });
 }
 
-function stubFetch() {
+function stubFetch(results?: Record<string, unknown>[]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -40,6 +42,7 @@ function stubFetch() {
       }
 
       if (url.endsWith('/search')) {
+        if (results) return jsonResponse({ results });
         if (body.search_service === 'duckduckgo') {
           return jsonResponse({
             results: [
@@ -66,6 +69,38 @@ afterEach(() => {
 });
 
 describe('runSearch', () => {
+  it('carries API dates through filtering, scoring and Newest sorting', async () => {
+    stubFetch([
+      { title: 'Old', link: 'https://a.com/old', snippet: '1 hour ago ... misleading', published_date: '2025-01-01' },
+      { title: 'Day only', link: 'https://a.com/day', snippet: 'plain', published_date: '2026-09-17' },
+      { title: 'Recent', link: 'https://a.com/recent', snippet: '3 days ago ... misleading', published_date: '2026-09-18T17:30:00Z' },
+      { title: 'Unknown', link: 'https://a.com/unknown', snippet: 'plain', published_date: null },
+    ]);
+    const out = await runSearch(
+      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' }, now: () => new Date('2026-09-18T18:30:00Z') },
+      { request: 'Bun', sources: ['google'], window: '24h' }
+    );
+    expect(out.lanes[0]!.stale).toBe(1);
+    expect(out.items).toHaveLength(3);
+    expect(out.items.find((i) => i.title === 'Day only')).toMatchObject({ publishedDate: '2026-09-17', ageHours: 42.5 });
+    const recent = out.items.find((i) => i.title === 'Recent')!;
+    expect(recent).toMatchObject({ publishedDate: '2026-09-18T17:30:00Z', ageHours: 1 });
+    expect(recent.freshness).toBeCloseTo(23 / 24);
+    expect([...out.items].sort((a, b) => compareItems(a, b, 'newest')).map((i) => i.title))
+      .toEqual(['Recent', 'Day only', 'Unknown']);
+  });
+
+  it('recomputes age from the cached absolute publication time', async () => {
+    stubFetch([{ title: 'Recent', link: 'https://a.com', snippet: '1 hour ago ... text', published_date: '2026-09-18T17:00:00Z' }]);
+    let now = new Date('2026-09-18T18:00:00Z');
+    const deps = { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' }, cache: memoryCache(), now: () => now };
+    const input = { request: 'Bun', sources: ['google' as const], window: 'any' as const };
+    expect((await runSearch(deps, input)).items[0]!.ageHours).toBe(1);
+    now = new Date('2026-09-18T18:30:00Z');
+    expect((await runSearch(deps, input)).items[0]!.ageHours).toBe(1.5);
+    expect(calls.filter((c) => c.url.endsWith('/search'))).toHaveLength(1);
+  });
+
   it('infers window and sources, picks the stripped query, and scores results', async () => {
     stubFetch();
     const out = await runSearch(

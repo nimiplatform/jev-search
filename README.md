@@ -86,7 +86,7 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 - Cloudflare KV stores query-derived cache keys and result snippets for the configured TTL. Removing `CACHE` disables this cache.
 - With `FEEDBACK` enabled, Analytics Engine records search text, inferred query, selected sources and time range, counts, timings and token usage. Result-click events include search text, destination URL, source, relevance and rank. These records are **not anonymous query data**. The application does not add IP addresses to those events; the rate limiter uses the client IP. Cloudflare request logging is enabled separately in the configuration.
 - The page loads a font from Google Fonts. Result links lead to third-party sites.
-- Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering relies partly on dates detectable in snippets; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
+- Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering and Newest sorting prefer Search1API's `published_date`, falling back to snippet dates when unavailable. Day-only dates are displayed as calendar dates and filtered with allowance for the unknown time of day; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
 
 ## Project layout
 

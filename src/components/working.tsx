@@ -73,7 +73,7 @@ function Mark({ state }: { state: Line['state'] }) {
  * and grows a line per thing that happens, in plain words. Once results
  * are on screen it folds to one line that keeps updating; click to reopen.
  */
-export function Working({ state }: { state: AskState }) {
+export function Working({ state, actions }: { state: AskState; actions?: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   const hasResults = state.items.length > 0;
   useEffect(() => {
@@ -96,8 +96,11 @@ export function Working({ state }: { state: AskState }) {
   else if (state.phase === 'done') {
     summary = (
       <>
-        Asked {list(intent.sources.map((id) => sourceById(id).label))} · {found} found · {answering} answer you
-        {state.totalMs !== null && <span className="text-muted-foreground/60"> · {(state.totalMs / 1000).toFixed(1)}s</span>}
+        <span className="sm:hidden">{answering} of {found} relevant</span>
+        <span className="hidden sm:inline">
+          Asked {list(intent.sources.map((id) => sourceById(id).label))} · {found} found · {answering} answer you
+          {state.totalMs !== null && <span className="text-muted-foreground/60"> · {(state.totalMs / 1000).toFixed(1)}s</span>}
+        </span>
       </>
     );
   } else if (pending.length > 0) {
@@ -111,27 +114,30 @@ export function Working({ state }: { state: AskState }) {
 
   return (
     <section className="mt-4 text-sm">
-      <button
-        className="group grid w-full grid-cols-[1rem_minmax(0,1fr)_0.875rem] items-start gap-2 text-left text-muted-foreground hover:text-foreground"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        type="button"
-      >
-        {state.phase === 'done' ? (
-          <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-            <CheckIcon className="size-2.5" strokeWidth={3} />
-          </span>
-        ) : (
-          <LoaderCircleIcon className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
-        )}
-        <span className="min-w-0 wrap-anywhere">{summary}</span>
-        <ChevronDownIcon
-          className={cn(
-            'mt-[3px] size-3.5 shrink-0 opacity-40 transition-transform duration-200 group-hover:opacity-80',
-            open && 'rotate-180'
+      <div className="flex items-start gap-4">
+        <button
+          className="group flex min-w-0 flex-1 items-start gap-2 text-left text-muted-foreground hover:text-foreground"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          type="button"
+        >
+          {state.phase === 'done' ? (
+            <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <CheckIcon className="size-2.5" strokeWidth={3} />
+            </span>
+          ) : (
+            <LoaderCircleIcon className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
           )}
-        />
-      </button>
+          <span className="min-w-0 wrap-anywhere">{summary}</span>
+          <ChevronDownIcon
+            className={cn(
+              'mt-[3px] size-3.5 shrink-0 opacity-40 transition-transform duration-200 group-hover:opacity-80',
+              open && 'rotate-180'
+            )}
+          />
+        </button>
+        {actions}
+      </div>
 
       <div className="fold" data-open={open ? '' : undefined}>
         <ol className="mt-2 ml-1.5 flex flex-col gap-1.5 border-l pl-4">

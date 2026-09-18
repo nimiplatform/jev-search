@@ -22,14 +22,19 @@ export function mergeItems(existing: RankedItem[], incoming: RankedItem[]): Rank
       out.push(item);
       continue;
     }
+    // Keep the date, age and score from the same source. A structured API
+    // date wins over a snippet estimate regardless of lane arrival order.
+    const publication = (!found.publishedDate && item.publishedDate) || found.ageHours === null
+      ? item : found;
     const merged: RankedItem = {
       ...found,
       engines: [...new Set([...found.engines, ...item.engines])],
       relevance: Math.max(found.relevance, item.relevance),
       ranked: found.ranked || item.ranked,
       position: Math.min(found.position, item.position),
-      ageHours: found.ageHours ?? item.ageHours,
-      freshness: Math.max(found.freshness, item.freshness),
+      publishedDate: publication.publishedDate,
+      ageHours: publication.ageHours,
+      freshness: publication.freshness,
       snippet: found.snippet.length >= item.snippet.length ? found.snippet : item.snippet,
     };
     byUrl.set(key, merged);

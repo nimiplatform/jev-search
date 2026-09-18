@@ -1,5 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import { freshnessScore, parseAgeHours, stripAgePrefix } from '@/lib/freshness';
+import { formatPublicationAge, freshnessScore, isPublicationStale, parseAgeHours, resolvePublication, stripAgePrefix } from '@/lib/freshness';
+
+describe('structured publication dates', () => {
+  const now = Date.parse('2026-09-18T18:30:00Z');
+
+  it('prefers either API shape over a conflicting snippet', () => {
+    expect(resolvePublication('2026-09-18T17:30:00Z', '3 days ago ... text', now))
+      .toEqual({ publishedDate: '2026-09-18T17:30:00Z', ageHours: 1 });
+    expect(resolvePublication('2026-09-17', '1 hour ago ... text', now))
+      .toEqual({ publishedDate: '2026-09-17', ageHours: 42.5 });
+  });
+
+  it.each([undefined, null, '', '1h', '6days ago', 123, '2026-02-30', '2026-09-18T24:00:00Z', '2026-09-18T12:00:00+08:00'])(
+    'falls back for missing or invalid API values: %s', (value) => {
+      expect(resolvePublication(value, '2 hours ago ... text', now)).toEqual({ ageHours: 2 });
+      expect(resolvePublication(value, 'No date', now)).toEqual({ ageHours: null });
+    }
+  );
+
+  it('clamps future dates without changing the original date', () => {
+    expect(resolvePublication('2026-09-19', '', now))
+      .toEqual({ publishedDate: '2026-09-19', ageHours: 0 });
+  });
+
+  it('only discards a day-only result when its whole day is stale', () => {
+    expect(isPublicationStale(resolvePublication('2026-09-17', '', now), 36)).toBe(false);
+    expect(isPublicationStale(resolvePublication('2026-09-16', '', now), 36)).toBe(true);
+    expect(isPublicationStale(resolvePublication('2026-09-17T00:00:00Z', '', now), 36)).toBe(true);
+    expect(isPublicationStale({ ageHours: null }, 36)).toBe(false);
+    expect(isPublicationStale(resolvePublication('2025-01-01', '', now), Infinity)).toBe(false);
+  });
+
+  it('displays calendar dates without implying hour precision', () => {
+    expect(formatPublicationAge(resolvePublication('2026-09-18', '', now))).toBe('2026-09-18');
+    expect(formatPublicationAge(resolvePublication('2026-09-17', '', now))).toBe('2026-09-17');
+    expect(formatPublicationAge(resolvePublication('2026-09-18T17:30:00Z', '', now))).toBe('1h ago');
+    expect(formatPublicationAge({ ageHours: null })).toBeNull();
+    expect(formatPublicationAge({ ageHours: 72 })).toBe('3d ago');
+  });
+});
 
 describe('parseAgeHours', () => {
   it('reads relative prefixes from Search1API snippets', () => {

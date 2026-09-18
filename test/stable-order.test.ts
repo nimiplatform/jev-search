@@ -40,4 +40,18 @@ describe('place', () => {
     p = place(p, [item('a', 0.5), item('b', 0.6)], 'best', true);
     expect(p.order).toEqual(['b', 'a']);
   });
+
+  it('switches between relevance and publication order without changing the results', () => {
+    const items = [
+      { ...item('relevant', 0.95), ageHours: 72 },
+      { ...item('recent', 0.7), ageHours: 1 },
+      item('unknown', 0.9),
+    ];
+    let p = place(EMPTY_PLACEMENT, items, 'best', false);
+    expect(p.order).toEqual(['relevant', 'unknown', 'recent']);
+    p = place(p, items, 'newest', true);
+    expect(p.order).toEqual(['recent', 'relevant', 'unknown']);
+    p = place(p, items, 'best', true);
+    expect(p.order).toEqual(['relevant', 'unknown', 'recent']);
+  });
 });

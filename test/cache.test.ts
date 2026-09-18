@@ -2,6 +2,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { cacheKey, cachedSearch, cacheTtl, memoryCache } from '@/lib/cache';
 
 describe('cachedSearch', () => {
+  it('bypasses v1 entries and preserves publication dates on cache hits', async () => {
+    const cache = memoryCache();
+    await cache.put('v1|google|x|any|||8', JSON.stringify([{ title: 'old', link: 'https://a.com', snippet: '' }]));
+    const results = [{ title: 'new', link: 'https://a.com', snippet: '', published_date: '2026-09-18T10:00:00Z' }];
+    const run = vi.fn(async () => results);
+    expect(await cachedSearch(cache, { query: 'x' }, run)).toEqual({ results, cached: false });
+    expect(await cachedSearch(cache, { query: 'x' }, run)).toEqual({ results, cached: true });
+    expect(run).toHaveBeenCalledOnce();
+  });
+
   it('runs once, then serves the same params from the cache with a window-based ttl', async () => {
     const cache = memoryCache();
     const run = vi.fn(async () => [{ title: 't', link: 'https://a.com', snippet: 's' }]);

@@ -17,6 +17,8 @@ export interface RawResult {
   title: string;
   link: string;
   snippet: string;
+  /** Normalized ISO publication date from Search1API; absent when unknown. */
+  published_date?: string | null;
 }
 
 const ENTITIES: Record<string, string> = {
@@ -92,5 +94,6 @@ export async function search(
       title: decodeEntities(r.title),
       link: r.link,
       snippet: decodeEntities(r.snippet ?? ''),
+      ...(typeof r.published_date === 'string' ? { published_date: r.published_date } : {}),
     }));
 }

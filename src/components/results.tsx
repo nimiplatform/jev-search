@@ -1,17 +1,10 @@
 import { useState } from 'react';
+import { formatPublicationAge } from '@/lib/freshness';
 import type { Cluster, RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 import { feedbackFn, type FeedbackEvent } from '@/server/search';
 import { SourceIcon } from './source-icon';
-
-function formatAge(hours: number | null): string | null {
-  if (hours === null) return null;
-  if (hours < 1) return 'just now';
-  if (hours < 48) return `${Math.round(hours)}h ago`;
-  if (hours < 24 * 14) return `${Math.round(hours / 24)}d ago`;
-  return `${Math.round(hours / (24 * 7))}w ago`;
-}
 
 function displayUrl(url: string): string {
   try {
@@ -39,7 +32,7 @@ function ResultRow({
   request: string;
   minor?: boolean;
 }) {
-  const age = formatAge(item.ageHours);
+  const age = formatPublicationAge(item);
   const base = { request, url: item.url, source: item.source, relevance: item.relevance, rank };
 
   return (
@@ -49,7 +42,7 @@ function ResultRow({
           <SourceIcon className="size-3.5" id={item.source} />
         </span>
         <span className="truncate">{displayUrl(item.url)}</span>
-        {age && <span>· {age}</span>}
+        {age && <span className="shrink-0">· <time dateTime={item.publishedDate}>{age}</time></span>}
         {item.engines.length > 1 && (
           <span title={item.engines.join(' + ')}>· found by {item.engines.length} engines</span>
         )}
@@ -141,7 +134,6 @@ export function Results({
     </>
   );
 }
-
 
 
 

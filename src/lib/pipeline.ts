@@ -1,6 +1,6 @@
 import { cachedSearch, type ResultCache } from './cache';
 import { buildCandidates } from './candidates';
-import { freshnessScore, parseAgeHours, stripAgePrefix } from './freshness';
+import { freshnessScore, isPublicationStale, resolvePublication, stripAgePrefix } from './freshness';
 import { mergeItems } from './merge';
 import type { RankedItem } from './rank';
 import { search, type RawResult, type Search1ApiConfig, type SearchParams } from './search1api';
@@ -200,8 +200,9 @@ export async function* askStream(
     const items: RankedItem[] = [];
     let stale = 0;
     raw.forEach((row, index) => {
-      const ageHours = parseAgeHours(row.snippet, now.getTime());
-      if (ageHours !== null && ageHours > maxAge) {
+      const publication = resolvePublication(row.published_date, row.snippet, now.getTime());
+      const { ageHours } = publication;
+      if (isPublicationStale(publication, maxAge)) {
         stale += 1; // maxAge is Infinity for 'any'
         return;
       }
@@ -211,7 +212,7 @@ export async function* askStream(
         title: row.title,
         url: row.link,
         snippet: stripAgePrefix(row.snippet),
-        ageHours,
+        ...publication,
         relevance: 0,
         ranked: false,
         freshness: freshnessScore(ageHours, win.hours),

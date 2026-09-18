@@ -16,7 +16,7 @@ const TTL_SECONDS: Record<string, number> = {
 
 export function cacheKey(params: SearchParams): string {
   return [
-    'v1',
+    'v2', // v1 discarded published_date before caching results.
     params.service ?? 'google',
     params.query.trim().toLowerCase(),
     params.timeRange ?? 'any',

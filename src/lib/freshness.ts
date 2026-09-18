@@ -1,8 +1,6 @@
 /**
- * Search1API's Google path prefixes snippets with a relative age such as
- * "19 hours ago ..." or an absolute date such as "Sep 12, 2026 ...". That is
- * the only publication signal available per result, so freshness is derived
- * from it here rather than from a separate metadata field.
+ * Prefer Search1API's normalized published_date. Snippet parsing remains a
+ * fallback for engines or responses without the structured field.
  */
 
 const RELATIVE_RE =
@@ -22,6 +20,49 @@ const UNIT_HOURS: Record<string, number> = {
   month: 24 * 30,
   year: 24 * 365,
 };
+
+export interface Publication {
+  /** Original normalized date, preserving day versus second precision. */
+  publishedDate?: string;
+  /** Day-only dates use UTC midnight as a sorting/scoring estimate. */
+  ageHours: number | null;
+}
+
+/** Accept only the two public shapes, including a valid calendar date. */
+export function resolvePublication(
+  publishedDate: unknown,
+  snippet: string,
+  now = Date.now()
+): Publication {
+  if (typeof publishedDate === 'string' &&
+      /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}Z)?$/.test(publishedDate)) {
+    const ts = Date.parse(publishedDate);
+    if (Number.isFinite(ts)) {
+      const canonical = new Date(ts).toISOString().replace('.000Z', 'Z');
+      if (canonical.slice(0, publishedDate.length) === publishedDate) {
+        return { publishedDate, ageHours: Math.max(0, (now - ts) / 3_600_000) };
+      }
+    }
+  }
+  return { ageHours: parseAgeHours(snippet, now) };
+}
+
+/** A day-only date may refer to any moment in that UTC day. */
+export function isPublicationStale(publication: Publication, maxAgeHours: number): boolean {
+  if (publication.ageHours === null) return false;
+  const uncertainty = publication.publishedDate?.length === 10 ? 24 : 0;
+  return publication.ageHours - uncertainty > maxAgeHours;
+}
+
+export function formatPublicationAge({ publishedDate, ageHours }: Publication): string | null {
+  // Show the calendar date instead of inventing an hour of publication.
+  if (publishedDate?.length === 10) return publishedDate;
+  if (ageHours === null) return null;
+  if (ageHours < 1) return 'just now';
+  if (ageHours < 48) return `${Math.round(ageHours)}h ago`;
+  if (ageHours < 24 * 14) return `${Math.round(ageHours / 24)}d ago`;
+  return `${Math.round(ageHours / (24 * 7))}w ago`;
+}
 
 /** Age in hours parsed from the snippet prefix, or null when absent. */
 export function parseAgeHours(snippet: string, now = Date.now()): number | null {
