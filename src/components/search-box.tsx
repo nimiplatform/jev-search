@@ -63,7 +63,7 @@ export function SearchBox({
       role="search"
     >
       {/* The pill is this wrapper, so the text fade below never touches the border. */}
-      <div className="rounded-3xl border border-input shadow-sm transition-[color,box-shadow] focus-within:border-ring focus-within:shadow-md focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
+      <div className="rounded-3xl border border-input shadow-sm transition-[color,box-shadow] has-focus-visible:border-ring has-focus-visible:shadow-md has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50 dark:bg-input/30">
         <SearchIcon
           aria-hidden
           className={cn('pointer-events-none absolute left-4 text-muted-foreground', compact ? 'top-3 size-4' : 'top-3.5 size-5')}
