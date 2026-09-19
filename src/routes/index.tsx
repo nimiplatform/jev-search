@@ -1,10 +1,12 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { EngineStrip } from '@/components/home-demos';
 import { SearchBox } from '@/components/search-box';
+import { HOME_CANONICAL } from '@/lib/seo';
 
 export const Route = createFileRoute('/')({
   head: () => ({
-    meta: [{ property: 'og:url', content: 'https://jev.s1.dev/' }],
+    meta: [{ property: 'og:url', content: HOME_CANONICAL }],
+    links: [{ rel: 'canonical', href: HOME_CANONICAL }],
   }),
   component: Home,
 });

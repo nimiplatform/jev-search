@@ -1,13 +1,23 @@
 import { Moon, Sun } from 'lucide-react';
 import { useEffect } from 'react';
 
+export const THEME_SURFACE = { light: '#fffafd', dark: '#191619' } as const;
+
+export function paintThemeColor(dark: boolean) {
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? THEME_SURFACE.dark : THEME_SURFACE.light);
+}
+
 // Run before the page paints. Keep the preference on <html> even when storage is blocked.
 export const themeScript = `(() => {
   const root = document.documentElement;
   let theme;
   try { theme = localStorage.getItem('jev-theme'); } catch {}
   if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
-  root.classList.toggle('dark', theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
+  const dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  root.classList.toggle('dark', dark);
+  const meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? '${THEME_SURFACE.dark}' : '${THEME_SURFACE.light}');
 })();`;
 
 export function ThemeToggle() {
@@ -16,6 +26,7 @@ export function ThemeToggle() {
     const syncSystem = () => {
       if (!document.documentElement.dataset.theme) {
         document.documentElement.classList.toggle('dark', system.matches);
+        paintThemeColor(system.matches);
       }
     };
     syncSystem();
@@ -28,9 +39,10 @@ export function ThemeToggle() {
       className="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
       onClick={() => {
         const root = document.documentElement;
-        const theme = root.classList.toggle('dark') ? 'dark' : 'light';
-        root.dataset.theme = theme;
-        try { localStorage.setItem('jev-theme', theme); } catch { /* Switching still works without storage. */ }
+        const dark = root.classList.toggle('dark');
+        root.dataset.theme = dark ? 'dark' : 'light';
+        paintThemeColor(dark);
+        try { localStorage.setItem('jev-theme', dark ? 'dark' : 'light'); } catch { /* Switching still works without storage. */ }
       }}
       title="Toggle light / dark mode"
       type="button"

@@ -1,12 +1,13 @@
 import { HeadContent, Link, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { PwaRegister } from '@/components/pwa-register';
 import { RepositoryLink } from '@/components/repository-link';
-import { ThemeToggle, themeScript } from '@/components/theme-toggle';
+import { THEME_SURFACE, ThemeToggle, themeScript } from '@/components/theme-toggle';
+import { SHARE_IMAGE } from '@/lib/seo';
 import appCss from '../styles.css?url';
 
 const TITLE = 'Jev Search — Picks where to search. Ranks what comes back.';
 const DESCRIPTION = "TypeSafe's Jev reads your question, selects sources, time ranges and search terms, and ranks the results. No generated answers.";
-const SHARE_IMAGE = 'https://jev.s1.dev/og-home.png';
 const SHARE_IMAGE_ALT = 'Jev Search homepage with a search box, example queries and supported search engines.';
 const WEB_ANALYTICS_BEACON = JSON.stringify({ token: '6d6e9cf679fe45cb8ce7143deb36a0c2' });
 
@@ -16,6 +17,7 @@ export const Route = createRootRoute({
       { href: appCss, rel: 'stylesheet' },
       { href: '/favicon.png', rel: 'icon', type: 'image/png', sizes: '400x400' },
       { href: '/apple-touch-icon.png?v=typesafe', rel: 'apple-touch-icon', sizes: '400x400' },
+      { href: '/manifest.webmanifest', rel: 'manifest' },
       { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
       { href: 'https://fonts.gstatic.com', rel: 'preconnect', crossOrigin: 'anonymous' },
       {
@@ -28,6 +30,10 @@ export const Route = createRootRoute({
       { content: 'width=device-width, initial-scale=1', name: 'viewport' },
       { title: TITLE },
       { name: 'description', content: DESCRIPTION },
+      { name: 'mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-title', content: 'Jev Search' },
+      { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
       { property: 'og:type', content: 'website' },
       { property: 'og:site_name', content: 'Jev Search' },
       { property: 'og:title', content: TITLE },
@@ -66,6 +72,7 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta content={THEME_SURFACE.light} name="theme-color" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <HeadContent />
       </head>
@@ -114,6 +121,7 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
           </div>
         </footer>
         <Scripts />
+        <PwaRegister />
         <script
           data-cf-beacon={WEB_ANALYTICS_BEACON}
           src="https://static.cloudflareinsights.com/beacon.min.js"

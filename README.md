@@ -6,6 +6,8 @@ Search the web in plain language. [TypeSafe's Jev](https://typesafe.ai) chooses 
 
 **[Try Jev Search](https://jev.s1.dev)**
 
+Install it from the browser as an app (Add to Home Screen on iOS, Install app on Chrome and Edge). Searches still need a network connection; the installed app caches only an offline page, not results.
+
 Built by Search1API. This is an independent project, not an official TypeSafe product.
 
 ## How it works
@@ -49,7 +51,7 @@ Tests mock providers and do not need API keys. Building does not call either pro
 The application uses TanStack Start, React and the Cloudflare Vite plugin. You need a Cloudflare account with Workers and KV enabled.
 
 1. Run `pnpm exec wrangler login`.
-2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the absolute social-card URLs in `src/routes/__root.tsx` and `src/routes/index.tsx` to match your deployment. Remove or replace the Cloudflare Web Analytics snippet in `src/routes/__root.tsx`; the committed token belongs to the hosted demo.
+2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the origin in `src/lib/seo.ts`, `public/robots.txt` and `public/sitemap.xml` to match your deployment. Remove or replace the Cloudflare Web Analytics snippet in `src/routes/__root.tsx`; the committed token belongs to the hosted demo.
 3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
 4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap. `CACHE` and `SEARCH_RATE_LIMIT` are optional; regenerate types after changing bindings.
 5. Upload your own provider keys and deploy:
@@ -87,6 +89,8 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 - The hosted demo loads a [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/) beacon for page views, visits, referrers, country, browser and page-load metrics. It does not use cookies and does not record URL query strings, so search terms in `/search?q=` are not stored there. Self-hosters can remove the snippet in `src/routes/__root.tsx`.
 - The rate limiter uses the client IP. Cloudflare Workers request logging is enabled separately in the configuration; invocation logs include request URLs, which may contain the search query.
 - The page loads a font from Google Fonts. Result links lead to third-party sites.
+- Production builds register a service worker so the app can be installed. It intercepts only top-level navigations when the network fails, and never `/api/ask`. Local `pnpm dev` does not register it, so Vite's module reload keeps working.
+- The sitemap lists only `https://jev.s1.dev/`. `/search` pages send `noindex, follow` so example queries and user searches are not indexed as separate documents. `robots.txt` does not `Disallow: /search`, so crawlers can still see that directive.
 - Relevance percentages are model judgments, not verified accuracy. Search snippets may be incorrect, incomplete or stale. Date filtering and Newest sorting prefer Search1API's `published_date`, falling back to snippet dates when unavailable. Day-only dates are displayed as calendar dates and filtered with allowance for the unknown time of day; unknown dates can remain. Selecting and ranking existing results does not verify their claims.
 
 ## Project layout
@@ -101,7 +105,9 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 | `src/lib/cache.ts` | Per-engine response cache |
 | `src/lib/rank.ts`, `merge.ts` | Ordering, grouping and URL deduplication |
 | `src/lib/use-ask.ts` | Client stream consumer |
+| `src/lib/seo.ts` | Hosted origin, canonical URL and search-page robots |
 | `src/routes/api/ask.ts` | Search endpoint, origin validation and rate limiting |
+| `public/robots.txt`, `public/sitemap.xml` | Crawl hints for the homepage only |
 | `src/server/` | Cloudflare bindings |
 | `test/` | Provider-independent regression tests |
 
@@ -111,4 +117,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [SECURITY.
 
 Application code is [MIT licensed](LICENSE). TypeSafe and Jev names and brand assets belong to their respective owners and are not included in this project's MIT license.
 
-The favicon and Apple Touch Icon come from the icon links on [typesafe.ai](https://typesafe.ai/): [favicon](https://framerusercontent.com/images/aNFzSFxM4fjICmnibw7npfZjcQ.png) and [Apple Touch Icon](https://framerusercontent.com/images/kcuF2BEp5XaVfkmFB634IPRKQH0.png). Most source icons use [Simple Icons](https://simpleicons.org). Google uses the four-colour G; Yandex uses the official 2021 mark (white Я in a red circle). Interface icons use [Lucide](https://lucide.dev). For your own branding, replace the icons in `public/` and update `src/components/wordmark.tsx` and the page metadata.
+The favicon and Apple Touch Icon come from the icon links on [typesafe.ai](https://typesafe.ai/): [favicon](https://framerusercontent.com/images/aNFzSFxM4fjICmnibw7npfZjcQ.png) and [Apple Touch Icon](https://framerusercontent.com/images/kcuF2BEp5XaVfkmFB634IPRKQH0.png). The PWA icons in `public/` are resized from the Apple Touch Icon. Most source icons use [Simple Icons](https://simpleicons.org). Google uses the four-colour G; Yandex uses the official 2021 mark (white Я in a red circle). Interface icons use [Lucide](https://lucide.dev). For your own branding, replace the icons in `public/` and update `src/components/wordmark.tsx`, `public/manifest.webmanifest` and the page metadata.

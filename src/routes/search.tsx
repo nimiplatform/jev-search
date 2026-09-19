@@ -8,6 +8,7 @@ import { SearchBox } from '@/components/search-box';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
+import { HOME_CANONICAL, SEARCH_ROBOTS } from '@/lib/seo';
 import { isSourceId, isWindowId, type SourceId, type WindowId } from '@/lib/sources';
 import { useAsk } from '@/lib/use-ask';
 import { useStableOrder } from '@/lib/use-stable-order';
@@ -35,7 +36,11 @@ export const Route = createFileRoute('/search')({
     return out;
   },
   head: ({ match }) => ({
-    meta: [{ title: match.search.q ? `${match.search.q} · Jev Search` : 'Jev Search — Picks where to search. Ranks what comes back.' }],
+    meta: [
+      { title: match.search.q ? `${match.search.q} · Jev Search` : 'Jev Search — Picks where to search. Ranks what comes back.' },
+      { name: 'robots', content: SEARCH_ROBOTS },
+    ],
+    links: [{ rel: 'canonical', href: HOME_CANONICAL }],
   }),
   component: SearchPage,
 });
