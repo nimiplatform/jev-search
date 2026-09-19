@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { askStream, type AskEvent } from '@/lib/pipeline';
 import { validateAskRequest } from '@/lib/validate';
-import { getEnv } from '@/server/env.server';
+import { getEnv, getJudgeConfig } from '@/server/env.server';
 
 function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -57,7 +57,7 @@ export const Route = createFileRoute('/api/ask')({
 
         const deps = {
           search1api: { apiKey: env.SEARCH1API_API_KEY, baseUrl: env.SEARCH1API_BASE_URL },
-          typesafe: { apiKey: env.TYPESAFE_API_KEY, model: env.TYPESAFE_MODEL },
+          judge: getJudgeConfig(env),
           cache: env.CACHE,
         };
         const signal = AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]);

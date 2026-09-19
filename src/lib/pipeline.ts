@@ -14,7 +14,7 @@ import {
   type SourceId,
   type WindowId,
 } from './sources';
-import { inferIntent, rerank, type Intent, type TypeSafeConfig } from './typesafe';
+import { inferIntent, rerank, type Intent, type JudgeConfig, type ProviderId } from './typesafe';
 
 export interface SearchInput {
   request: string;
@@ -47,6 +47,8 @@ export interface IntentEvent {
     entity: Intent['entity'];
   };
   intentMs: number;
+  /** Jev provider that interpreted the request. */
+  judge: ProviderId;
 }
 
 /** An engine has answered; the UI shows its count while the judge scores its rows. */
@@ -88,7 +90,8 @@ const WINDOW_TOLERANCE = 1.5;
 
 export interface PipelineDeps {
   search1api: Search1ApiConfig;
-  typesafe: TypeSafeConfig;
+  /** Jev providers, primary first. */
+  judge: JudgeConfig;
   /** Optional KV-like store; lanes are cached by query, engine and window. */
   cache?: ResultCache;
   now?: () => Date;
@@ -122,7 +125,7 @@ export async function* askStream(
     : runSearch(speculative).catch(() => null);
 
   // 1. Understand the request.
-  const intent = await inferIntent(deps.typesafe, { request, candidates, now }, signal);
+  const intent = await inferIntent(deps.judge, { request, candidates, now }, signal);
   const intentMs = Math.round(performance.now() - started);
 
   const window = input.window ?? intent.window.choice ?? DEFAULT_WINDOW;
@@ -149,6 +152,7 @@ export async function* askStream(
     sources,
     inferred: { window: intent.window, sources: intent.sources, query: intent.query, entity: intent.entity },
     intentMs,
+    judge: intent.provider,
   };
 
   // 2. Every lane searches, filters by age, and gets scored on its own. The
@@ -227,7 +231,7 @@ export async function* askStream(
     if (items.length > 0) {
       try {
         const scored = await rerank(
-          deps.typesafe,
+          deps.judge,
           request,
           items.map((it) => ({ id: it.id, source: it.source, title: it.title, snippet: it.snippet })),
           signal
@@ -238,7 +242,7 @@ export async function* askStream(
           item.ranked = true;
         }
       } catch (err) {
-        error = `typesafe: ${err instanceof Error ? err.message : String(err)}`;
+        error = `jev: ${err instanceof Error ? err.message : String(err)}`;
       }
     }
     return {

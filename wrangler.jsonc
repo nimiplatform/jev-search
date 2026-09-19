@@ -9,9 +9,23 @@
   "routes": [{ "pattern": "jev.s1.dev", "custom_domain": true }],
   "vars": {
     "SEARCH1API_BASE_URL": "https://api.search1api.com",
-    "TYPESAFE_MODEL": "jev-latest"
+    "TYPESAFE_MODEL": "jev-latest",
+    "AI_GATEWAY_MODEL": "typesafe-ai/jev",
+    "CLOUDFLARE_AI_MODEL": "typesafe/jev"
   },
-  "secrets": { "required": ["SEARCH1API_API_KEY", "TYPESAFE_API_KEY"] },
+  // Deployment-specific settings are secrets, so they stay out of the repository and survive
+  // deploys. Only SEARCH1API_API_KEY and the key of your primary Jev provider are needed.
+  //   JEV_PROVIDERS            enabled Jev providers in order of preference; default "typesafe".
+  //                            Unlisted providers stay off even when their credentials exist; the
+  //                            first with credentials is primary, the rest are fallbacks on
+  //                            HTTP 402, 429 and 5xx. Example: "vercel,typesafe,cloudflare".
+  //   TYPESAFE_API_KEY         typesafe: api.typesafe.ai
+  //   AI_GATEWAY_API_KEY       vercel: Vercel AI Gateway
+  //                            cloudflare needs no secret; it uses the Workers AI binding below.
+  // Local dev injects only the secrets listed here from .dev.vars; a missing one is a local warning.
+  "secrets": { "required": ["SEARCH1API_API_KEY", "JEV_PROVIDERS", "TYPESAFE_API_KEY", "AI_GATEWAY_API_KEY"] },
+  // Workers AI binding for the cloudflare provider. Idle unless JEV_PROVIDERS lists cloudflare.
+  "ai": { "binding": "AI", "remote": true },
   "ratelimits": [{
     "name": "SEARCH_RATE_LIMIT",
     "namespace_id": "2026091801",
