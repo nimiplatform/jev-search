@@ -44,7 +44,7 @@ pnpm build
 pnpm exec wrangler deploy --dry-run
 ```
 
-Tests mock providers and do not need API keys. Building does not call either provider. `worker-configuration.d.ts` is generated from Wrangler configuration; regenerate it after changing bindings.
+Tests mock providers and do not need API keys. Building does not call any provider. `worker-configuration.d.ts` is generated from the Wrangler configuration and `.dev.vars.example`; regenerate it after changing bindings or secrets.
 
 ## Deploy to Cloudflare Workers
 
@@ -104,7 +104,7 @@ Provider notes:
 - **Vercel** free-tier teams are rate-limited per model and return 429 after a few requests. Purchasing any AI Gateway credit moves the team to the paid tier, which removes the gateway's own limits. Jev is listed at no charge for input and output tokens on either tier; set a budget in Vercel in case that listing changes. The gateway's `boolean` answers map to TypeSafe's `noul` probabilities, and TypeSafe's confidence is read from the gateway's provider metadata.
 - **Cloudflare** runs the model through the Workers AI binding, so it needs no key. Jev is a third-party model billed to Cloudflare AI Gateway prepaid credits; without a balance the binding fails with "Insufficient AI Gateway credits", which this app treats as 402. Local `pnpm dev` calls Workers AI remotely through your `wrangler login` session. Remove the `ai` block from `wrangler.jsonc` to drop this provider entirely.
 
-`secrets.required` in `wrangler.jsonc` lists every secret, including the optional ones, so that local development reads them from `.dev.vars`. A missing one is a local warning, not an error; `.dev.vars.example` lists them all.
+`.dev.vars.example` lists every secret and is also the input for `pnpm cf-typegen`, so the generated `worker-configuration.d.ts` does not depend on a developer's private `.dev.vars`. Add new secrets there first.
 
 GitHub Actions validates pull requests and pushes with tests, type generation and a production build. The hosted demo deploys through Cloudflare Workers Builds when changes are pushed to `main`.
 
