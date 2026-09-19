@@ -77,7 +77,7 @@ describe('runSearch', () => {
       { title: 'Unknown', link: 'https://a.com/unknown', snippet: 'plain', published_date: null },
     ]);
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' }, now: () => new Date('2026-09-18T18:30:00Z') },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] }, now: () => new Date('2026-09-18T18:30:00Z') },
       { request: 'Bun', sources: ['google'], window: '24h' }
     );
     expect(out.lanes[0]!.stale).toBe(1);
@@ -93,7 +93,7 @@ describe('runSearch', () => {
   it('recomputes age from the cached absolute publication time', async () => {
     stubFetch([{ title: 'Recent', link: 'https://a.com', snippet: '1 hour ago ... text', published_date: '2026-09-18T17:00:00Z' }]);
     let now = new Date('2026-09-18T18:00:00Z');
-    const deps = { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' }, cache: memoryCache(), now: () => now };
+    const deps = { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] }, cache: memoryCache(), now: () => now };
     const input = { request: 'Bun', sources: ['google' as const], window: 'any' as const };
     expect((await runSearch(deps, input)).items[0]!.ageHours).toBe(1);
     now = new Date('2026-09-18T18:30:00Z');
@@ -104,7 +104,7 @@ describe('runSearch', () => {
   it('infers window and sources, picks the stripped query, and scores results', async () => {
     stubFetch();
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' }, now: () => new Date('2026-09-17T00:00:00Z') },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] }, now: () => new Date('2026-09-17T00:00:00Z') },
       { request: 'what are people saying about Bun 1.3 this week' }
     );
 
@@ -134,7 +134,7 @@ describe('runSearch', () => {
   it('respects explicit window and sources', async () => {
     stubFetch();
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'Bun 1.3', window: '24h', sources: ['google', 'duckduckgo', 'github'] }
     );
     expect(out.window).toBe('24h');
@@ -152,7 +152,7 @@ describe('runSearch', () => {
   it('searches Hacker News through Google site and the native news endpoint only', async () => {
     stubFetch([{ title: 'SQLite discussion', link: 'https://news.ycombinator.com/item?id=1', snippet: 'SQLite' }]);
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'SQLite', sources: ['hackernews'], window: '30d' }
     );
     const searches = calls.filter((c) => c.url.endsWith('/search') || c.url.endsWith('/news'));
@@ -170,7 +170,7 @@ describe('runSearch', () => {
   it('uses the vertical engine for vertical sources', async () => {
     stubFetch();
     await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'LLM agents', sources: ['arxiv'] }
     );
     const searches = calls.filter((c) => c.url.endsWith('/search') && c.body.search_service === 'arxiv');
@@ -180,7 +180,7 @@ describe('runSearch', () => {
   it('sends no time filter for Any time, and never to engines that reject it', async () => {
     stubFetch();
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'Oppenheimer', window: 'any', sources: ['google', 'imdb'] }
     );
     const searches = calls.filter((c) => c.url.endsWith('/search'));
@@ -192,7 +192,7 @@ describe('runSearch', () => {
 
     calls.length = 0;
     await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'Oppenheimer', window: '7d', sources: ['google', 'imdb'] }
     );
     const again = calls.filter((c) => c.url.endsWith('/search'));
@@ -212,7 +212,7 @@ describe('runSearch', () => {
       return original(input, init);
     }));
     const out = await runSearch(
-      { search1api: { apiKey: 's1' }, typesafe: { apiKey: 'ts' } },
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] } },
       { request: 'Bun 1.3', sources: ['reddit', 'github'] }
     );
     expect(out.errors.map((e) => e.engine).sort()).toEqual(['github', 'google']);

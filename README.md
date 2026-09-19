@@ -18,11 +18,11 @@ Built by Search1API. This is an independent project, not an official TypeSafe pr
 
 Try “TypeSafe Jev API documentation and examples”, “Jev discussions on Hacker News this week”, or “Videos about TypeSafe Jev this month”. These are plain-language requests, not hardcoded filters. Model choices and provider coverage can vary.
 
-The application streams newline-delimited JSON from `POST /api/ask`: `intent`, `found` (progress counts), `lane` (ranked results), and `done`. Each engine has a 15-second deadline within an overall 30-second request deadline. Google may start speculatively while Jev interprets the question. Successful, non-empty engine responses are cached for 10 minutes to 6 hours, depending on the time window.
+The application streams newline-delimited JSON from `POST /api/ask`: `intent` (including `judge`, the Jev provider that answered), `found` (progress counts), `lane` (ranked results), and `done`. Each engine has a 15-second deadline within an overall 30-second request deadline. Google may start speculatively while Jev interprets the question. Successful, non-empty engine responses are cached for 10 minutes to 6 hours, depending on the time window.
 
 ## Local development
 
-Requires Node.js 22.12+ and pnpm 10.8.0. Obtain API keys from [Search1API](https://www.search1api.com) and [TypeSafe](https://typesafe.ai).
+Requires Node.js 22.12+ and pnpm 10.8.0. Obtain an API key from [Search1API](https://www.search1api.com) and credentials for at least one Jev provider: [TypeSafe](https://typesafe.ai), [Cloudflare Workers AI](https://developers.cloudflare.com/ai/models/typesafe/jev/) or [Vercel AI Gateway](https://vercel.com/ai-gateway/models/jev); see [Jev providers](#jev-providers).
 
 ```bash
 git clone https://github.com/superagents-lab/jev-search.git
@@ -30,11 +30,11 @@ cd jev-search
 corepack enable
 pnpm install --frozen-lockfile
 cp .dev.vars.example .dev.vars
-# Set SEARCH1API_API_KEY and TYPESAFE_API_KEY in .dev.vars.
+# Set SEARCH1API_API_KEY and at least one Jev provider key in .dev.vars.
 pnpm dev
 ```
 
-Open http://localhost:3030. Local development uses local Cloudflare bindings. Keep `.dev.vars` private; it is ignored by Git. `.env.example` is provided as a variable reference, but `.dev.vars` is the documented local configuration.
+Open http://localhost:3030. Local development uses local KV and rate-limit bindings; the Workers AI binding is remote and uses your `wrangler login` session. Keep `.dev.vars` private; it is ignored by Git. `.env.example` is provided as a variable reference, but `.dev.vars` is the documented local configuration.
 
 ```bash
 pnpm generate-routes
@@ -44,7 +44,7 @@ pnpm build
 pnpm exec wrangler deploy --dry-run
 ```
 
-Tests mock providers and do not need API keys. Building does not call either provider. `worker-configuration.d.ts` is generated from Wrangler configuration; regenerate it after changing bindings.
+Tests mock providers and do not need API keys. Building does not call any provider. `worker-configuration.d.ts` is generated from the Wrangler configuration and `.dev.vars.example`; regenerate it after changing bindings or secrets.
 
 ## Deploy to Cloudflare Workers
 
@@ -58,7 +58,7 @@ The application uses TanStack Start, React and the Cloudflare Vite plugin. You n
 
 ```bash
 pnpm exec wrangler secret put SEARCH1API_API_KEY
-pnpm exec wrangler secret put TYPESAFE_API_KEY
+pnpm exec wrangler secret put TYPESAFE_API_KEY   # or another Jev provider, see Jev providers below
 pnpm cf-typegen
 pnpm test
 pnpm run deploy:dry-run
@@ -66,6 +66,45 @@ pnpm run deploy
 ```
 
 Wrangler can create the Worker when uploading its first secret. Provider keys stay in Cloudflare secrets and are never included in the browser bundle. Each search can make several billable provider calls. Configure provider spending limits for a public deployment; the same-origin check is a browser boundary, not authentication.
+
+### Jev providers
+
+Jev is available from three services that answer the same questions. Any one of them is enough; the others are optional fallbacks.
+
+| Provider | How it is called | What it needs |
+| --- | --- | --- |
+| `typesafe` | TypeSafe's own API, `api.typesafe.ai/v1/systemone` | `TYPESAFE_API_KEY` secret |
+| `vercel` | Vercel AI Gateway, model `typesafe-ai/jev` | `AI_GATEWAY_API_KEY` secret |
+| `cloudflare` | Workers AI binding `AI` in `wrangler.jsonc`, model `typesafe/jev` | Nothing; billed to your Cloudflare AI Gateway credits |
+
+Configuration is read from the Worker environment. Secrets are uploaded with `wrangler secret put` and belong to one deployment; `vars` are committed defaults in `wrangler.jsonc`.
+
+| Variable | Kind | Default | Meaning |
+| --- | --- | --- | --- |
+| `SEARCH1API_API_KEY` | secret, required | | Search1API key used for every engine call. |
+| `JEV_PROVIDERS` | secret, optional | `typesafe` | Enabled Jev providers in order of preference, comma-separated, e.g. `vercel,typesafe,cloudflare`. Providers not listed stay off even when their credentials exist. The first listed provider with credentials is primary; the rest are fallbacks. A listed provider without credentials is skipped. |
+| `TYPESAFE_API_KEY` | secret | | Enables `typesafe`. |
+| `AI_GATEWAY_API_KEY` | secret | | Enables `vercel`. Create it in the Vercel dashboard under AI Gateway. |
+| `TYPESAFE_MODEL` | var | `jev-latest` | Model ID sent to TypeSafe. |
+| `AI_GATEWAY_MODEL` | var | `typesafe-ai/jev` | Model ID sent to Vercel AI Gateway. |
+| `CLOUDFLARE_AI_MODEL` | var | `typesafe/jev` | Model ID run through the Workers AI binding. |
+
+A fresh deployment with only `SEARCH1API_API_KEY` and `TYPESAFE_API_KEY` uses TypeSafe alone. To add fallbacks, upload the extra credentials and set the order:
+
+```bash
+pnpm exec wrangler secret put AI_GATEWAY_API_KEY
+echo "vercel,typesafe,cloudflare" | pnpm exec wrangler secret put JEV_PROVIDERS
+```
+
+A request moves to the next provider only when the current one fails with HTTP 402 (no credit), 429 (throttled) or 5xx. Client errors such as 400 or 401 are not retried, and nothing is retried after the request is cancelled. Each hop is logged as `[jev] <provider> returned HTTP <status>; retrying with <next>`, and the `intent` event's `judge` field names the provider that answered.
+
+Provider notes:
+
+- **TypeSafe** bills per token to your TypeSafe organization. Enable auto-reload there if it is your primary provider; without credit it returns 402.
+- **Vercel** free-tier teams are rate-limited per model and return 429 after a few requests. Purchasing any AI Gateway credit moves the team to the paid tier, which removes the gateway's own limits. Jev is listed at no charge for input and output tokens on either tier; set a budget in Vercel in case that listing changes. The gateway's `boolean` answers map to TypeSafe's `noul` probabilities, and TypeSafe's confidence is read from the gateway's provider metadata.
+- **Cloudflare** runs the model through the Workers AI binding, so it needs no key. Jev is a third-party model billed to Cloudflare AI Gateway prepaid credits; without a balance the binding fails with "Insufficient AI Gateway credits", which this app treats as 402. Local `pnpm dev` calls Workers AI remotely through your `wrangler login` session. Remove the `ai` block from `wrangler.jsonc` to drop this provider entirely.
+
+`.dev.vars.example` lists every secret and is also the input for `pnpm cf-typegen`, so the generated `worker-configuration.d.ts` does not depend on a developer's private `.dev.vars`. Add new secrets there first.
 
 GitHub Actions validates pull requests and pushes with tests, type generation and a production build. The hosted demo deploys through Cloudflare Workers Builds when changes are pushed to `main`.
 
@@ -83,7 +122,7 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 
 ## Data and limitations
 
-- Search requests go to TypeSafe and Search1API. TypeSafe also receives result titles and snippets for relevance scoring. Search1API queries the selected engines.
+- Search requests go to Search1API and to the Jev provider that answers them: TypeSafe directly, or Cloudflare Workers AI or Vercel AI Gateway, which forward to TypeSafe. The Jev provider also receives result titles and snippets for relevance scoring. Search1API queries the selected engines.
 - Cloudflare KV stores query-derived cache keys and result snippets for the configured TTL. Removing `CACHE` disables this cache.
 - The application does not record search text, inferred queries or result clicks in its own analytics.
 - The hosted demo loads a [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/) beacon for page views, visits, referrers, country, browser and page-load metrics. It does not use cookies and does not record URL query strings, so search terms in `/search?q=` are not stored there. Self-hosters can remove the snippet in `src/routes/__root.tsx`.
@@ -100,6 +139,7 @@ Cloudflare installs dependencies from `pnpm-lock.yaml`. The build creates the Wo
 | `src/lib/sources.ts` | Sources, engine mappings and time windows |
 | `src/lib/candidates.ts` | Search-query candidates |
 | `src/lib/typesafe.ts` | Typed intent and relevance judgments |
+| `src/lib/judge-config.ts` | Jev provider chain built from environment variables and bindings |
 | `src/lib/search1api.ts` | Search provider client and engine deadlines |
 | `src/lib/pipeline.ts` | Concurrent search and ranking stream |
 | `src/lib/cache.ts` | Per-engine response cache |

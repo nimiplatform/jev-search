@@ -11,7 +11,7 @@
     "preview": "vite preview --port 3030",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv --env-file .dev.vars.example",
     "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "deploy": "pnpm run build && wrangler deploy"
   },
