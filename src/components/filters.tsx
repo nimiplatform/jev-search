@@ -70,16 +70,22 @@ export function Filters({
           const failed = done && lanes.every((l) => l?.error && l.items.length === 0);
           return (
             <button
-              aria-label={failed ? `${s.label}: search failed. Click to leave it out.` : undefined}
-              className={cn(chip, active)}
+              // Phones show the icon and count only, so the name lives here; the
+              // working block below still spells every source out.
+              aria-label={
+                failed
+                  ? `${s.label}: search failed. Click to leave it out.`
+                  : `${s.label}${done ? `, ${counts.get(s.id) ?? 0} results` : ''}. Click to leave it out.`
+              }
+              className={cn(chip, active, 'px-2.5 sm:px-3')}
               key={s.id}
               onClick={() => toggleSource(s.id)}
               title={failed ? `${s.label} couldn't finish searching. Click to leave it out.` : `Searching ${s.label}. Click to leave it out.`}
               type="button"
             >
               <SourceIcon className="size-3.5" id={s.id} on={!failed} />
-              {s.label}
-              <span className="inline-flex w-[3ch] justify-end text-xs text-muted-foreground tabular-nums">
+              <span className="hidden sm:inline">{s.label}</span>
+              <span className="inline-flex w-[2ch] justify-end text-xs text-muted-foreground tabular-nums sm:w-[3ch]">
                 {failed ? <TriangleAlertIcon aria-hidden className="size-3.5 text-destructive" /> : done ? counts.get(s.id) ?? 0 : null}
               </span>
             </button>
