@@ -16,7 +16,9 @@ Built by Search1API. This is an independent project, not an official TypeSafe pr
 2. **Search.** Google, DuckDuckGo and Yandex search the open web. Hacker News, Reddit and GitHub each combine a Google site-restricted search with their dedicated engine (Hacker News uses the news endpoint). X, arXiv, YouTube, Wikipedia, IMDb and WeChat use vertical engines. Calls run concurrently; one failed engine does not discard another engine's results.
 3. **Rank.** Jev scores each result for relevance. Results are merged by URL, ordered by relevance, engine agreement and original rank, and streamed as each lane finishes. Lower-scoring results are grouped separately. A failed source shows a warning rather than a zero-result count.
 
-Try “TypeSafe Jev API documentation and examples”, “Jev discussions on Hacker News this week”, or “Videos about TypeSafe Jev this month”. These are plain-language requests, not hardcoded filters. Model choices and provider coverage can vary.
+Try “Rust async runtimes on Hacker News this month”, “What do Reddit users think of the Framework laptop?”, or “New papers on speculative decoding”. These are plain-language requests, not hardcoded filters; the last one names no source or time and lets Jev choose. Model choices and provider coverage can vary.
+
+Each request is sent to both providers: the Jev provider reads it and Search1API searches with the query derived from it. Jev Search itself does not store queries or result clicks.
 
 The application streams newline-delimited JSON from `POST /api/ask`: `intent` (including `judge`, the Jev provider that answered), `found` (progress counts), `lane` (ranked results), and `done`. Each engine has a 15-second deadline within an overall 30-second request deadline. Google may start speculatively while Jev interprets the question. Successful, non-empty engine responses are cached for 10 minutes to 6 hours, depending on the time window.
 

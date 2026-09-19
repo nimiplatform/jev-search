@@ -3,7 +3,7 @@
 ## Product identity
 Jev Search. Jev is TypeSafe's model for selecting sources and ranking results; Search1API supplies the search engines. Use TypeSafe's official pink icon for the search results header and browser icons. Keep the builder attribution in the footer, not in the wordmark or page title. The page title and subtitle should communicate both source selection and ranking.
 
-The homepage has no separate header or logo image: center the "Jev Search" heading above the search box, with "Jev picks where to search and ranks what comes back." as the subtitle. The search results page retains its compact navigation header.
+The homepage has no separate header or logo image: center the "Jev Search" heading above the search box, with "Picks where to search. Ranks what comes back." as the subtitle (Jev is named in the heading, so the subtitle does not repeat it). Under the search box, three plain-text example requests that look nothing alike (a phrase with a source and a time, a question with only a source, a bare topic) say "write it any way you like" without prescribing a format; no template placeholder. The footer keeps two icon-and-word links (Showcase, Community) above the rule and one credit line below it. The search results page retains its compact navigation header.
 
 ## Users
 Developers and AI-curious people, many of them following TypeSafe's Jev. They arrive from a post or a link, type one question, and judge the product in the first ten seconds by whether the results look right. Desktop first, phone second.

@@ -2,8 +2,10 @@ import { HeadContent, Link, Scripts, createRootRoute, useRouterState } from '@ta
 import type { ReactNode } from 'react';
 import { PwaRegister } from '@/components/pwa-register';
 import { RepositoryLink } from '@/components/repository-link';
+import { SourceIcon } from '@/components/source-icon';
 import { THEME_SURFACE, ThemeToggle, themeScript } from '@/components/theme-toggle';
 import { SHARE_IMAGE } from '@/lib/seo';
+import { cn } from '@/lib/utils';
 import appCss from '../styles.css?url';
 
 const TITLE = 'Jev Search — Picks where to search. Ranks what comes back.';
@@ -84,40 +86,52 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
           </div>
         )}
         <div className="flex flex-1 flex-col">{children}</div>
-        <footer className="border-t px-4 py-4 text-xs text-muted-foreground">
-          <div className={isHome ? 'mx-auto max-w-5xl text-center' : 'mx-auto max-w-5xl'}>
+        {/* Two things with different jobs: where to go next (content, above the
+            rule, home only: results are where to go next on the search page)
+            and who did what to the query (one credit line, below it). */}
+        <footer className="text-xs text-muted-foreground">
+          {isHome && (
             <nav
-              aria-label="Jev projects and community"
-              className={`mb-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-sm ${isHome ? 'justify-center' : ''}`}
+              aria-label="Jev community"
+              className="mx-auto flex max-w-5xl items-center justify-center gap-x-6 px-4 pb-2 text-sm"
             >
               <a
-                className="inline-flex min-h-11 items-center text-foreground/80 hover:text-primary-text hover:underline"
+                className="inline-flex min-h-11 items-center gap-1.5 text-foreground/80 hover:text-primary-text hover:underline"
                 href="https://github.com/fatwang2/awesome-jev"
                 rel="noreferrer"
                 target="_blank"
+                title="Projects built with Jev"
               >
-                Explore more Jev projects
+                <SourceIcon className="size-3.5" id="github" />
+                Showcase
               </a>
               <a
-                className="inline-flex min-h-11 items-center text-foreground/80 hover:text-primary-text hover:underline"
+                className="inline-flex min-h-11 items-center gap-1.5 text-foreground/80 hover:text-primary-text hover:underline"
                 href="https://www.reddit.com/r/typesafe_jev/"
                 rel="noreferrer"
                 target="_blank"
+                title="r/typesafe_jev on Reddit"
               >
-                Join the Jev community on Reddit
+                <SourceIcon className="size-3.5" id="reddit" />
+                Community
               </a>
             </nav>
-            <span>
-              Understanding and ranking by{' '}
-              <a className="text-foreground/80 hover:underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
-                Jev, TypeSafe's judgment model
-              </a>
-              {' · '}built by{' '}
-              <a className="text-foreground/80 hover:underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
-                Search1API
-              </a>
-              {' · '}no generated answers{' · '}your query is sent to both
-            </span>
+          )}
+          <div className="border-t">
+            <p className={cn('mx-auto max-w-5xl px-4 py-4 leading-relaxed', isHome && 'text-center')}>
+              <span className="block sm:inline">
+                Judgment by{' '}
+                <a className="text-foreground/80 hover:underline" href="https://typesafe.ai" rel="noreferrer" target="_blank">
+                  Jev
+                </a>
+                {' · '}Search by{' '}
+                <a className="text-foreground/80 hover:underline" href="https://www.search1api.com" rel="noreferrer" target="_blank">
+                  Search1API
+                </a>
+              </span>
+              <span className="hidden sm:inline">{' · '}</span>
+              <span className="block sm:inline">No generated answers</span>
+            </p>
           </div>
         </footer>
         <Scripts />
