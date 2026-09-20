@@ -69,6 +69,23 @@ afterEach(() => {
 });
 
 describe('runSearch', () => {
+  it('searches and scores each lane once even when a caller repeats sources', async () => {
+    stubFetch([{ title: 'Bun discussion', link: 'https://reddit.com/r/bun/1', snippet: 'Bun runtime' }]);
+    const out = await runSearch(
+      { search1api: { apiKey: 's1' }, judge: { providers: [{ provider: 'typesafe' as const, apiKey: 'ts' }] }, now: () => new Date('2026-09-18T18:30:00Z') },
+      { request: 'Bun', sources: ['reddit', 'reddit', 'reddit'], window: 'any' }
+    );
+
+    const searchCalls = calls.filter((c) => c.url.endsWith('/search'));
+    expect(searchCalls.map((c) => c.body.search_service).sort()).toEqual(['google', 'reddit']);
+    // One intent judgment, then one relevance judgment per lane.
+    expect(calls.filter((c) => c.url.endsWith('/v1/systemone'))).toHaveLength(3);
+    expect(out.sources).toEqual(['reddit']);
+    expect(out.lanes).toHaveLength(2);
+    expect(out.items).toHaveLength(1);
+    expect(out.tokens).toBe(300);
+  });
+
   it('carries API dates through filtering, scoring and Newest sorting', async () => {
     stubFetch([
       { title: 'Old', link: 'https://a.com/old', snippet: '1 hour ago ... misleading', published_date: '2025-01-01' },

@@ -22,6 +22,8 @@ Each request is sent to both providers: the Jev provider reads it and Search1API
 
 The application streams newline-delimited JSON from `POST /api/ask`: `intent` (including `judge`, the Jev provider that answered), `found` (progress counts), `lane` (ranked results), and `done`. Each engine has a 15-second deadline within an overall 30-second request deadline. Google may start speculatively while Jev interprets the question. Successful, non-empty engine responses are cached for 10 minutes to 6 hours, depending on the time window.
 
+The optional `s` source list is capped at the number of supported sources (currently 12 entries before filtering). Longer lists return HTTP 400 before any provider calls. Repeated valid sources are merged, preserving their first occurrence, so repeating a source cannot multiply search or ranking calls. Selecting all supported sources remains allowed.
+
 ## Local development
 
 Requires Node.js 22.12+ and pnpm 10.8.0. Obtain an API key from [Search1API](https://www.search1api.com) and credentials for at least one Jev provider: [TypeSafe](https://typesafe.ai), [Cloudflare Workers AI](https://developers.cloudflare.com/ai/models/typesafe/jev/) or [Vercel AI Gateway](https://vercel.com/ai-gateway/models/jev); see [Jev providers](#jev-providers).
@@ -55,7 +57,7 @@ The application uses TanStack Start, React and the Cloudflare Vite plugin. You n
 1. Run `pnpm exec wrangler login`.
 2. In `wrangler.jsonc`, choose a Worker `name`. Remove `routes` to use a `workers.dev` URL, or replace `jev.s1.dev` with a domain in your Cloudflare account. Update the origin in `src/lib/seo.ts`, `public/robots.txt` and `public/sitemap.xml` to match your deployment. Remove or replace the Cloudflare Web Analytics snippet in `src/routes/__root.tsx`; the committed token belongs to the hosted demo.
 3. Run `pnpm exec wrangler kv namespace create jev-search-cache` and replace the `CACHE` namespace ID with the returned ID. The committed ID belongs to the hosted demo; it is not a credential.
-4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 30 searches per IP per minute per Cloudflare location; it is not a global spending cap. `CACHE` and `SEARCH_RATE_LIMIT` are optional; regenerate types after changing bindings.
+4. Choose a unique rate-limit `namespace_id` in your account. The default limit is 10 searches per IP per minute per Cloudflare location; it is not a global spending cap. Searches triggered by source or time filter changes count toward the same limit. `CACHE` and `SEARCH_RATE_LIMIT` are optional; regenerate types after changing bindings.
 5. Upload your own provider keys and deploy:
 
 ```bash

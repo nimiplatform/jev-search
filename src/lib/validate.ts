@@ -1,4 +1,4 @@
-import { isSourceId, isWindowId, type SourceId, type WindowId } from './sources';
+import { SOURCE_IDS, isSourceId, isWindowId, type SourceId, type WindowId } from './sources';
 
 export interface AskRequest {
   q: string;
@@ -17,7 +17,11 @@ export function validateAskRequest(input: unknown): AskRequest {
   const out: AskRequest = { q: q.trim() };
   if (typeof w === 'string' && isWindowId(w)) out.w = w;
   if (Array.isArray(s)) {
-    const ids = s.filter((v): v is SourceId => typeof v === 'string' && isSourceId(v));
+    // Bound the raw list before filtering so duplicates and invalid entries count too.
+    if (s.length > SOURCE_IDS.length) {
+      throw new Error(`s must contain at most ${SOURCE_IDS.length} entries`);
+    }
+    const ids = [...new Set(s.filter((v): v is SourceId => typeof v === 'string' && isSourceId(v)))];
     if (ids.length > 0) out.s = ids;
   }
   return out;

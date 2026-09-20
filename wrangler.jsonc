@@ -29,7 +29,7 @@
   "ratelimits": [{
     "name": "SEARCH_RATE_LIMIT",
     "namespace_id": "2026091801",
-    "simple": { "limit": 30, "period": 60 }
+    "simple": { "limit": 10, "period": 60 }
   }],
   // Self-hosters: create a namespace and replace this public resource ID.
   "kv_namespaces": [{ "binding": "CACHE", "id": "ff6092d31fbf4f5999be145d5dd8e84d" }],

@@ -131,7 +131,8 @@ export async function* askStream(
   const window = input.window ?? intent.window.choice ?? DEFAULT_WINDOW;
   let sources: SourceId[];
   if (input.sources && input.sources.length > 0) {
-    sources = input.sources;
+    // Direct callers can bypass HTTP validation; never start a lane twice.
+    sources = [...new Set(input.sources)];
   } else {
     const wanted = SOURCE_IDS.filter((id) => intent.sources[id] >= SOURCE_PROB_THRESHOLD);
     sources = wanted.length > 0 ? wanted : [...DEFAULT_SOURCE_IDS];
