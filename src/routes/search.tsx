@@ -5,6 +5,7 @@ import { RepositoryLink } from '@/components/repository-link';
 import { Results } from '@/components/results';
 import { Working } from '@/components/working';
 import { SearchBox } from '@/components/search-box';
+import { SponsorLink } from '@/components/sponsor-link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Wordmark } from '@/components/wordmark';
 import { clusterInOrder, type SortMode } from '@/lib/rank';
@@ -56,6 +57,7 @@ function Header({ q }: { q: string }) {
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
           <RepositoryLink />
+          <SponsorLink />
         </div>
       </div>
     </header>
