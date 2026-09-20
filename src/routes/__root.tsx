@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { PwaRegister } from '@/components/pwa-register';
 import { RepositoryLink } from '@/components/repository-link';
 import { SourceIcon } from '@/components/source-icon';
+import { SponsorLink } from '@/components/sponsor-link';
 import { THEME_SURFACE, ThemeToggle, themeScript } from '@/components/theme-toggle';
 import { SHARE_IMAGE } from '@/lib/seo';
 import { cn } from '@/lib/utils';
@@ -83,6 +84,7 @@ function RootDocument({ children }: { readonly children: ReactNode }) {
           <div className="absolute right-4 top-4 flex items-center gap-1 sm:right-6">
             <ThemeToggle />
             <RepositoryLink />
+            <SponsorLink />
           </div>
         )}
         <div className="flex flex-1 flex-col">{children}</div>
