@@ -1,0 +1,8 @@
+app_id: io.github.nimiplatform.jev-search
+display_name: Jev Search
+version: 0.1.1
+npm_package_name: jev-search
+cargo_package_name: jev-search-shell
+tauri_identifier: ai.nimi.apps.io.github.nimiplatform.jev-search
+package_author: Jev Search contributors
+identity_role: scaffold-generated-authoring-input

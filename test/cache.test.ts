@@ -38,6 +38,21 @@ describe('cachedSearch', () => {
     const broken = { get: async () => { throw new Error('Unavailable'); }, put: async () => { throw new Error('Unavailable'); } };
     expect((await cachedSearch(broken, { query: 'x' }, async () => results)).results).toEqual(results);
   });
+  it('expires entries after their ttl and drops the oldest past its size', async () => {
+    let now = 0;
+    const cache = memoryCache({ maxEntries: 2, now: () => now });
+    await cache.put('day', 'a', { expirationTtl: 600 });
+    await cache.put('forever', 'b');
+    now = 599_999;
+    expect(await cache.get('day')).toBe('a');
+    now = 600_000;
+    expect(await cache.get('day')).toBeNull();
+    await cache.put('one', '1');
+    await cache.put('two', '2');
+    expect(await cache.get('forever')).toBeNull();
+    expect(await cache.get('one')).toBe('1');
+    expect(cache.size).toBe(2);
+  });
   it('does not cache empty results' , async () => {
     const cache = memoryCache();
     const run = vi.fn(async () => []);

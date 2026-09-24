@@ -3,7 +3,7 @@ import { clusterInOrder, type RankedItem } from '@/lib/rank';
 import { EMPTY_PLACEMENT, place } from '@/lib/stable-order';
 
 function item(id: string, relevance: number, ranked = true): RankedItem {
-  return { id, source: 'google', title: id, url: `https://e.com/${id}`, snippet: '', ageHours: null, relevance, ranked, freshness: 0.5, position: 1, engines: ['google'] };
+  return { id, source: 'google', title: id, url: `https://e.com/${id}`, snippet: '', ageHours: null, relevance: ranked ? relevance : null, ranked, freshness: 0.5, position: 1, engines: ['google'] };
 }
 
 describe('clusterInOrder', () => {
@@ -33,6 +33,14 @@ describe('place', () => {
     // are inserted against the scores as they are now.
     p = place(p, [item('a', 0.5), item('b', 0.6), item('c', 0.7), item('d', 0.1)], 'best', false);
     expect(p.order).toEqual(['c', 'a', 'b', 'd']);
+  });
+
+  it('keeps rows whose judgment failed after every judged row, in arrival order', () => {
+    const failed = (id: string) => ({ ...item(id, 0, false), unscoredReason: 'Timed out (BUDGET_EXCEEDED)' });
+    let p = place(EMPTY_PLACEMENT, [failed('x'), item('a', 0.2), failed('y'), item('b', 0.9)], 'best', false);
+    expect(p.order).toEqual(['b', 'a', 'x', 'y']);
+    p = place(p, [failed('x'), item('a', 0.2), failed('y'), item('b', 0.9)], 'newest', true);
+    expect(p.order).toEqual(['b', 'a', 'x', 'y']);
   });
 
   it('re-sorts everything when the mode changes', () => {

@@ -1,24 +1,13 @@
 import { Moon, Sun } from 'lucide-react';
 import { useEffect } from 'react';
+import { THEME_SURFACE } from '@/lib/theme-script';
 
-export const THEME_SURFACE = { light: '#fffafd', dark: '#191619' } as const;
+export { THEME_SURFACE, themeScript } from '@/lib/theme-script';
 
 export function paintThemeColor(dark: boolean) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', dark ? THEME_SURFACE.dark : THEME_SURFACE.light);
 }
-
-// Run before the page paints. Keep the preference on <html> even when storage is blocked.
-export const themeScript = `(() => {
-  const root = document.documentElement;
-  let theme;
-  try { theme = localStorage.getItem('jev-theme'); } catch {}
-  if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
-  const dark = theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-  root.classList.toggle('dark', dark);
-  const meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '${THEME_SURFACE.dark}' : '${THEME_SURFACE.light}');
-})();`;
 
 export function ThemeToggle() {
   useEffect(() => {

@@ -1,8 +1,8 @@
 /**
  * Build keyword-query candidates from a natural-language request.
  *
- * The judge (TypeSafe) selects, it does not generate, so code proposes the
- * candidates and the judge picks the one most likely to work as an engine
+ * The typed decision selects, it does not generate, so code proposes the
+ * candidates and the decision picks the one most likely to work as an engine
  * query. Candidate 0 is always the untouched request.
  */
 

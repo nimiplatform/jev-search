@@ -1,0 +1,2 @@
+# Keep the reviewed license bytes identical on every checkout platform.
+LICENSE -text

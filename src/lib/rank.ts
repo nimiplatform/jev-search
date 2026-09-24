@@ -10,10 +10,15 @@ export interface RankedItem {
   publishedDate?: string;
   /** Hours since publication; day-only dates use a UTC midnight estimate. */
   ageHours: number | null;
-  /** Judge's probability that the item is about what the user asked. 0 until `ranked`. */
-  relevance: number;
-  /** False while the engine has returned the row but the judge has not scored it yet. */
+  /**
+   * Judged probability that the item is about what the user asked. Null until
+   * judged, and it stays null when the judgment failed: never a stand-in 0.
+   */
+  relevance: number | null;
+  /** True once relevance has been judged. */
   ranked: boolean;
+  /** Why relevance could not be judged (failure, timeout or cancellation), with its reason code. */
+  unscoredReason?: string;
   /** 0..1, newer is higher, relative to the chosen window. */
   freshness: number;
   /** Rank within its source after merging that source's lanes, 1-based. */
@@ -22,24 +27,34 @@ export interface RankedItem {
   engines: string[];
 }
 
+/** Below this the judgment says "not about what you asked"; such rows are folded away, not deleted. */
+export const OFF_TOPIC = 0.3;
 
+export type RelevanceGroup = 'on-topic' | 'off-topic' | 'unscored';
+
+/** Where a row belongs: judged on topic, judged off topic, or not judged (pending or failed). */
+export function relevanceGroup(item: RankedItem): RelevanceGroup {
+  if (!item.ranked || item.relevance === null) return 'unscored';
+  return item.relevance >= OFF_TOPIC ? 'on-topic' : 'off-topic';
+}
 
 export type SortMode = 'best' | 'newest';
 
 /**
- * Ordering is exactly what the row shows. Best match: the judge's on-topic
+ * Ordering is exactly what the row shows. Best match: the judged on-topic
  * percentage, ties broken by how many engines agreed, then engine rank.
  * Newest: known age first, ties by on-topic; unknown age goes last.
+ * Rows without a judgment come after every judged row.
  */
 export function compareItems(a: RankedItem, b: RankedItem, mode: SortMode): number {
-  if (a.ranked !== b.ranked) return a.ranked ? -1 : 1; // unranked rows wait at the bottom
+  if (a.ranked !== b.ranked) return a.ranked ? -1 : 1; // unjudged rows wait at the bottom
   if (mode === 'newest') {
     const aa = a.ageHours ?? Number.POSITIVE_INFINITY;
     const bb = b.ageHours ?? Number.POSITIVE_INFINITY;
     if (aa !== bb) return aa - bb;
   }
-  const ra = Math.round(a.relevance * 100);
-  const rb = Math.round(b.relevance * 100);
+  const ra = a.relevance === null ? -1 : Math.round(a.relevance * 100);
+  const rb = b.relevance === null ? -1 : Math.round(b.relevance * 100);
   if (ra !== rb) return rb - ra;
   if (a.engines.length !== b.engines.length) return b.engines.length - a.engines.length;
   return a.position - b.position;

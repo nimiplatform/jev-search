@@ -1,6 +1,6 @@
 import type { RawResult, SearchParams } from './search1api';
 
-/** The subset of Cloudflare KV we use; anything with get/put works (tests pass a Map). */
+/** A small key-value store with expiry; `memoryCache` is the app's own. */
 export interface ResultCache {
   get(key: string): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
@@ -50,13 +50,38 @@ export async function cachedSearch(
   return { results, cached: false };
 }
 
-/** In-memory cache for tests and scripts. */
-export function memoryCache(): ResultCache & { size: number } {
-  const map = new Map<string, string>();
+export const MEMORY_CACHE_ENTRIES = 500;
+
+/**
+ * The app-owned cache, kept in the desktop host's memory for the life of the
+ * process. Entries expire after their `expirationTtl`; past `maxEntries` the
+ * oldest write is dropped first.
+ */
+export function memoryCache(
+  options: { maxEntries?: number; now?: () => number } = {}
+): ResultCache & { readonly size: number } {
+  const maxEntries = options.maxEntries ?? MEMORY_CACHE_ENTRIES;
+  const now = options.now ?? (() => Date.now());
+  const map = new Map<string, { value: string; expiresAt: number }>();
   return {
-    get: async (k) => map.get(k) ?? null,
-    put: async (k, v) => {
-      map.set(k, v);
+    get: async (key) => {
+      const entry = map.get(key);
+      if (!entry) return null;
+      if (entry.expiresAt <= now()) {
+        map.delete(key);
+        return null;
+      }
+      return entry.value;
+    },
+    put: async (key, value, putOptions) => {
+      const ttl = putOptions?.expirationTtl;
+      map.delete(key); // Re-insert so eviction order follows the latest write.
+      map.set(key, { value, expiresAt: ttl === undefined ? Number.POSITIVE_INFINITY : now() + ttl * 1000 });
+      while (map.size > maxEntries) {
+        const oldest = map.keys().next();
+        if (oldest.done) break;
+        map.delete(oldest.value);
+      }
     },
     get size() {
       return map.size;

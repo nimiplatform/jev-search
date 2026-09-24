@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatPublicationAge } from '@/lib/freshness';
-import type { Cluster, RankedItem } from '@/lib/rank';
+import { relevanceGroup, type Cluster, type RankedItem } from '@/lib/rank';
 import { sourceById } from '@/lib/sources';
 import { cn } from '@/lib/utils';
 import { SourceIcon } from './source-icon';
@@ -14,6 +14,32 @@ function displayUrl(url: string): string {
   } catch {
     return url;
   }
+}
+
+/** A judged percentage, or an honest statement that there is none. */
+function Relevance({ item }: { item: RankedItem }) {
+  if (item.ranked && item.relevance !== null) {
+    const relevance = item.relevance;
+    return (
+      <span className="inline-flex items-center gap-1" title="Judged probability that this result is about what you asked">
+        <span
+          className={cn(
+            'inline-block size-2 rounded-full',
+            relevance >= 0.7 ? 'bg-emerald-500' : relevance >= 0.4 ? 'bg-amber-500' : 'bg-neutral-400'
+          )}
+        />
+        {Math.round(relevance * 100)}% on topic
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1" title={item.unscoredReason}>
+      <span className="inline-block size-2 shrink-0 rounded-full border border-muted-foreground/60" />
+      <span className="min-w-0 wrap-anywhere">
+        {item.unscoredReason ? `Relevance not judged: ${item.unscoredReason}` : 'Relevance not judged yet'}
+      </span>
+    </span>
+  );
 }
 
 function ResultRow({
@@ -52,44 +78,46 @@ function ResultRow({
         <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{item.snippet}</p>
       )}
       <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-        <span
-          className="inline-flex items-center gap-1"
-          title="How sure Jev is that this result is about what you asked"
-        >
-          <span
-            className={cn(
-              'inline-block size-2 rounded-full',
-              item.relevance >= 0.7 ? 'bg-emerald-500' : item.relevance >= 0.4 ? 'bg-amber-500' : 'bg-neutral-400'
-            )}
-          />
-          {Math.round(item.relevance * 100)}% on topic
-        </span>
+        <Relevance item={item} />
       </div>
     </article>
   );
 }
 
-/** Below this the judge says "not about what you asked"; such rows are folded away, not deleted. */
-export const OFF_TOPIC = 0.3;
+/** 'streaming' while the task runs; 'stopped' when the user stopped it early. */
+export type ResultsStatus = 'streaming' | 'done' | 'stopped';
 
+/** Whether any chosen source failed to search: every one of them, some of them, or none. */
+export type SearchFailure = 'all' | 'some' | null;
+
+function emptyMessage(status: ResultsStatus, failure: SearchFailure): string {
+  if (status === 'stopped') return 'Stopped before any results arrived.';
+  if (failure === 'all') return 'Every search failed, so there are no results to show.';
+  if (failure === 'some') return 'Nothing found in the sources that answered.';
+  return 'Nothing found. Try a wider time range, or more sources.';
+}
+
+/**
+ * Judged on-topic rows first, then rows whose relevance could not be judged
+ * (they are not off topic, they are unknown), then the off-topic fold.
+ */
 export function Results({
   clusters,
-  streaming,
+  status,
+  failure = null,
 }: {
   clusters: Cluster[];
-  streaming: boolean;
+  status: ResultsStatus;
+  failure?: SearchFailure;
 }) {
   const [showOffTopic, setShowOffTopic] = useState(false);
-  const onTopic = clusters.filter((c) => c.lead.relevance >= OFF_TOPIC);
-  const offTopic = clusters.filter((c) => c.lead.relevance < OFF_TOPIC);
+  const onTopic = clusters.filter((c) => relevanceGroup(c.lead) === 'on-topic');
+  const unscored = clusters.filter((c) => relevanceGroup(c.lead) === 'unscored');
+  const offTopic = clusters.filter((c) => relevanceGroup(c.lead) === 'off-topic');
 
   if (clusters.length === 0) {
-    if (streaming) return null;
-    return (
-      <p className="mt-8 text-muted-foreground">
-        Nothing found. Try a wider time range, or more sources.
-      </p>
-    );
+    if (status === 'streaming') return null;
+    return <p className="mt-8 text-muted-foreground">{emptyMessage(status, failure)}</p>;
   }
 
   const render = (list: Cluster[]) =>
@@ -104,15 +132,20 @@ export function Results({
 
   return (
     <>
-      <ol className="mt-6 flex flex-col gap-6">{render(onTopic)}</ol>
-      {offTopic.length > 0 && !streaming && (
+      {(onTopic.length > 0 || unscored.length > 0) && (
+        <ol className="mt-6 flex flex-col gap-6">
+          {render(onTopic)}
+          {render(unscored)}
+        </ol>
+      )}
+      {offTopic.length > 0 && status !== 'streaming' && (
         <div className="mt-8">
           <button
             className="text-sm text-muted-foreground underline-offset-4 hover:underline"
             onClick={() => setShowOffTopic((v) => !v)}
             type="button"
           >
-            {showOffTopic ? 'Hide' : 'Show'} {offTopic.length} more that {offTopic.length === 1 ? "didn't" : "didn't"} seem to match
+            {showOffTopic ? 'Hide' : 'Show'} {offTopic.length} more that didn't seem to match
           </button>
           {showOffTopic && <ol className="mt-4 flex flex-col gap-6 opacity-70">{render(offTopic)}</ol>}
         </div>
@@ -120,4 +153,3 @@ export function Results({
     </>
   );
 }
-

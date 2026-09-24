@@ -26,6 +26,20 @@ describe('mergeItems', () => {
     });
   });
 
+  it('keeps a judgment over a failed one, and a failed one stays unjudged with its reason', () => {
+    const failed = item({ id: 'a', url: 'https://x.com/p', relevance: null, ranked: false, unscoredReason: 'Timed out (BUDGET_EXCEEDED)' });
+    const judged = item({ id: 'b', url: 'https://x.com/p', relevance: 0.4 });
+    for (const [first, second] of [[failed, judged], [judged, failed]]) {
+      const [merged] = mergeItems([first!], [second!]);
+      expect(merged).toMatchObject({ relevance: 0.4, ranked: true });
+      expect(merged).not.toHaveProperty('unscoredReason');
+    }
+    const other = item({ id: 'c', url: 'https://x.com/p', relevance: null, ranked: false, unscoredReason: 'Canceled (AbortError)' });
+    expect(mergeItems([failed], [other])[0]).toMatchObject({
+      relevance: null, ranked: false, unscoredReason: 'Timed out (BUDGET_EXCEEDED)',
+    });
+  });
+
   it('folds the same URL from a second engine into one row', () => {
     const a = item({ id: 'a', url: 'https://x.com/p/1', relevance: 0.6, position: 3, engines: ['google'] });
     const b = item({ id: 'b', url: 'https://www.x.com/p/1/', relevance: 0.9, position: 1, engines: ['duckduckgo'], ageHours: 5, freshness: 0.9 });

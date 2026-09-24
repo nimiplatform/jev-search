@@ -2,13 +2,9 @@ import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { EngineStrip, type EnginePreview } from '@/components/home-demos';
 import { SearchBox } from '@/components/search-box';
-import { HOME_CANONICAL } from '@/lib/seo';
+import { APP_TITLE, useDocumentTitle } from '@/lib/use-document-title';
 
 export const Route = createFileRoute('/')({
-  head: () => ({
-    meta: [{ property: 'og:url', content: HOME_CANONICAL }],
-    links: [{ rel: 'canonical', href: HOME_CANONICAL }],
-  }),
   component: Home,
 });
 
@@ -33,6 +29,7 @@ const EXAMPLES: Example[] = [
 
 function Home() {
   const [preview, setPreview] = useState<EnginePreview | null>(null);
+  useDocumentTitle(APP_TITLE);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 pb-12 pt-16 sm:py-20">

@@ -1,0 +1,21 @@
+app_id: io.github.nimiplatform.jev-search
+display_name: Jev Search
+version: 0.1.1
+profile: standalone
+manifest_role: submitted-input
+app_access:
+  - runtime.consume
+capability_contract_refs:
+  - text.decide
+required_standardized_feature_refs: []
+storage_policy:
+  kind: nimi-mediated-default
+metadata:
+  summary: "Search the web in plain language. Jev Search picks sources, time ranges and search terms, then ranks the links Search1API returns, with no generated answers. AI judgments use Nimi text.decide as configured in Nimi; web search needs your own Search1API key."
+  icon: public/icon-512.png
+  readme: README.md
+  release_notes: RELEASE_NOTES.md
+local_development:
+  electron:
+    renderer_origin: http://127.0.0.1:1531
+    host_source_directory: src-electron

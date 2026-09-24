@@ -1,6 +1,7 @@
-import { CheckIcon, ChevronDownIcon, LoaderCircleIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, LoaderCircleIcon, SquareIcon, TriangleAlertIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { OFF_TOPIC } from './results';
+import { relevanceGroup } from '@/lib/rank';
+import { sourceProgress, type SourceProgress } from '@/lib/progress';
 import { sourceById, windowById, type SourceId } from '@/lib/sources';
 import type { AskState } from '@/lib/use-ask';
 import { cn } from '@/lib/utils';
@@ -11,52 +12,90 @@ function list(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-type Line = { key: string; state: 'doing' | 'done' | 'failed'; text: React.ReactNode; icon?: SourceId };
+type Mark = 'doing' | 'done' | 'partial' | 'failed' | 'stopped';
+type Line = { key: string; state: Mark; text: React.ReactNode; icon?: SourceId };
+
+function notJudged(count: number): string {
+  return count > 0 ? `, ${count} not judged` : '';
+}
 
 /** Where each chosen source is, in words. */
-function sourceLines(state: AskState): Line[] {
-  const { intent } = state;
-  if (!intent) return [];
-  return intent.sources.map((id) => {
-    const source = sourceById(id);
-    const keys = source.lanes.map((l) => `${id}/${l.service}`);
-    const answered = keys.filter((k) => k in state.found || k in state.lanes);
-    const scored = keys.filter((k) => k in state.lanes);
-    const found = keys.reduce((n, k) => n + (state.found[k] ?? 0), 0);
-    const rows = state.items.filter((i) => i.source === id);
-    const answering = rows.filter((i) => i.relevance >= OFF_TOPIC).length;
-    const allFailed = scored.length === keys.length && scored.every((k) => state.lanes[k]?.error) && found === 0;
-
-    if (allFailed) return { key: id, state: 'failed', icon: id, text: <>{source.label} didn't answer</> };
-    if (answered.length === 0) return { key: id, state: 'doing', icon: id, text: <>Asking {source.label}…</> };
-    if (scored.length < keys.length) {
+function sourceLine(p: SourceProgress, stopped: boolean): Line {
+  const label = sourceById(p.id).label;
+  const base = { key: p.id, icon: p.id };
+  switch (p.status) {
+    case 'waiting':
+      return { ...base, state: 'doing', text: <>Asking {label}…</> };
+    case 'judging':
       return {
-        key: id,
+        ...base,
         state: 'doing',
-        icon: id,
         text: (
           <>
-            {source.label} · {found} found
-            {scored.length > 0 && `, ${answering} answer you so far`}
+            {label} · {p.found} found
+            {p.finished > 0 && `, ${p.answering} answer you so far`}
             <span className="text-muted-foreground"> · checking which answer you…</span>
           </>
         ),
       };
-    }
-    return {
-      key: id,
-      state: 'done',
-      icon: id,
-      text: found === 0 ? <>{source.label} · nothing there</> : <>{source.label} · {answering} of {found} answer you</>,
-    };
-  });
+    case 'failed':
+      return { ...base, state: 'failed', text: <>{label} didn't answer</> };
+    case 'partial':
+      return {
+        ...base,
+        state: 'partial',
+        text: (
+          <>
+            {label} · {p.answering} of {p.found} answer you{notJudged(p.unscored)} · {p.failures.length} of {p.lanes} searches failed
+          </>
+        ),
+      };
+    case 'unfinished':
+      return {
+        ...base,
+        state: 'stopped',
+        text: (
+          <>
+            {label} · {stopped ? 'stopped before it finished' : 'did not finish'}
+            {p.found > 0 && ` (${p.found} found so far)`}
+          </>
+        ),
+      };
+    case 'done':
+      return {
+        ...base,
+        state: 'done',
+        text:
+          p.found === 0 ? (
+            <>{label} · nothing there</>
+          ) : (
+            <>
+              {label} · {p.answering} of {p.found} answer you{notJudged(p.unscored)}
+            </>
+          ),
+      };
+  }
 }
 
-function Mark({ state }: { state: Line['state'] }) {
+function MarkIcon({ state }: { state: Mark }) {
   if (state === 'done') {
     return (
       <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
         <CheckIcon className="size-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (state === 'partial') {
+    return (
+      <span className="inline-flex size-4 shrink-0 items-center justify-center text-amber-600 dark:text-amber-400">
+        <TriangleAlertIcon aria-hidden className="size-3.5" />
+      </span>
+    );
+  }
+  if (state === 'stopped') {
+    return (
+      <span className="inline-flex size-4 shrink-0 items-center justify-center text-muted-foreground">
+        <SquareIcon aria-hidden className="size-2.5" fill="currentColor" />
       </span>
     );
   }
@@ -68,10 +107,16 @@ function Mark({ state }: { state: Line['state'] }) {
   );
 }
 
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
 /**
  * The wait, narrated. A block that fills the space where results will land
  * and grows a line per thing that happens, in plain words. Once results
  * are on screen it folds to one line that keeps updating; click to reopen.
+ * A stopped search says so, and sources that had not finished are not
+ * shown as complete.
  */
 export function Working({ state, actions }: { state: AskState; actions?: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -82,35 +127,76 @@ export function Working({ state, actions }: { state: AskState; actions?: React.R
   useEffect(() => {
     if (state.phase === 'understanding') setOpen(true);
   }, [state.phase]);
-  if (state.phase === 'idle' || state.phase === 'error') return null;
+  if (state.phase === 'idle') return null;
+  if (state.phase === 'error' && !state.intent) return null;
 
   const { intent } = state;
-  const lines = sourceLines(state);
+  const progress = sourceProgress(state);
+  const lines = progress.map((p) => sourceLine(p, state.phase === 'stopped'));
   const found = Object.values(state.found).reduce((n, c) => n + c, 0);
-  const answering = state.items.filter((i) => i.relevance >= OFF_TOPIC).length;
-  const pending = lines.filter((l) => l.state === 'doing');
+  const answering = state.items.filter((i) => relevanceGroup(i) === 'on-topic').length;
+  const unscored = state.items.filter((i) => relevanceGroup(i) === 'unscored').length;
+  const pending = progress.filter((p) => p.status === 'waiting' || p.status === 'judging');
+  const troubled = progress.filter((p) => p.status === 'failed' || p.status === 'partial').length;
+  const allFailed = progress.length > 0 && progress.every((p) => p.status === 'failed');
   const window = intent && intent.window !== 'any' ? windowById(intent.window).label.toLowerCase() : null;
+  const ended = state.phase === 'done' || state.phase === 'stopped' || state.phase === 'error';
 
   let summary: React.ReactNode;
-  if (!intent) summary = 'Reading your question…';
-  else if (state.phase === 'done') {
+  if (state.phase === 'stopped') {
+    summary = intent ? (
+      <>
+        Stopped · partial results · {found} found · {answering} answer you{notJudged(unscored)}
+      </>
+    ) : (
+      'Stopped before the question was read'
+    );
+  } else if (state.phase === 'error') {
+    summary = <>Search failed · partial results · {found} found · {answering} answer you</>;
+  } else if (!intent) summary = 'Reading your question…';
+  else if (state.phase === 'done' && allFailed) {
+    // Failed searches found nothing because they did not run, not because there was nothing.
+    summary = <>Asked {list(intent.sources.map((id) => sourceById(id).label))} · every search failed</>;
+  } else if (state.phase === 'done') {
     summary = (
       <>
         <span className="sm:hidden">{answering} of {found} relevant</span>
         <span className="hidden sm:inline">
           Asked {list(intent.sources.map((id) => sourceById(id).label))} · {found} found · {answering} answer you
-          {state.totalMs !== null && <span className="text-muted-foreground/60"> · {(state.totalMs / 1000).toFixed(1)}s</span>}
+          {notJudged(unscored)}
+          {state.totalMs !== null && <span className="text-muted-foreground/60"> · {seconds(state.totalMs)}</span>}
         </span>
       </>
     );
   } else if (pending.length > 0) {
     summary = (
       <>
-        Still asking {list(pending.map((l) => sourceById(l.key as SourceId).label))}…
+        Still asking {list(pending.map((p) => sourceById(p.id).label))}…
         {found > 0 && <span className="text-muted-foreground/70"> · {found} found so far</span>}
       </>
     );
   } else summary = <>Checking which of the {found} answer you…</>;
+
+  let headIcon: React.ReactNode;
+  if (state.phase === 'done' && troubled > 0) {
+    headIcon = <TriangleAlertIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />;
+  } else if (state.phase === 'done') {
+    headIcon = (
+      <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+        <CheckIcon className="size-2.5" strokeWidth={3} />
+      </span>
+    );
+  } else if (state.phase === 'stopped') {
+    headIcon = (
+      <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center text-muted-foreground">
+        <SquareIcon aria-hidden className="size-3" fill="currentColor" />
+      </span>
+    );
+  } else if (state.phase === 'error') {
+    headIcon = <TriangleAlertIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />;
+  } else {
+    headIcon = <LoaderCircleIcon className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />;
+  }
 
   return (
     <section className="mt-4 text-sm">
@@ -121,13 +207,7 @@ export function Working({ state, actions }: { state: AskState; actions?: React.R
           onClick={() => setOpen((v) => !v)}
           type="button"
         >
-          {state.phase === 'done' ? (
-            <span className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <CheckIcon className="size-2.5" strokeWidth={3} />
-            </span>
-          ) : (
-            <LoaderCircleIcon className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
-          )}
+          {headIcon}
           <span className="min-w-0 wrap-anywhere">{summary}</span>
           <ChevronDownIcon
             className={cn(
@@ -143,7 +223,7 @@ export function Working({ state, actions }: { state: AskState; actions?: React.R
         <ol className="mt-2 ml-1.5 flex flex-col gap-1.5 border-l pl-4">
           {intent && (
             <li className="flex items-center gap-2 text-muted-foreground">
-              <Mark state="done" />
+              <MarkIcon state="done" />
               <span>
                 Looking for <span className="text-foreground">“{intent.query}”</span>
                 {window && <span> · {window}</span>}
@@ -151,9 +231,9 @@ export function Working({ state, actions }: { state: AskState; actions?: React.R
             </li>
           )}
           {!intent && (
-            <li className="flex items-center gap-2 text-foreground">
-              <Mark state="doing" />
-              <span>Reading your question</span>
+            <li className={cn('flex items-center gap-2', ended ? 'text-muted-foreground' : 'text-foreground')}>
+              <MarkIcon state={ended ? 'stopped' : 'doing'} />
+              <span>{ended ? 'Stopped while reading your question' : 'Reading your question'}</span>
             </li>
           )}
           {lines.map((line) => (
@@ -164,15 +244,24 @@ export function Working({ state, actions }: { state: AskState; actions?: React.R
               )}
               key={line.key}
             >
-              <Mark state={line.state} />
+              <MarkIcon state={line.state} />
               {line.icon && <SourceIcon className="size-3.5" id={line.icon} on={line.state !== 'failed'} />}
               <span>{line.text}</span>
             </li>
           ))}
           {state.phase === 'done' && state.totalMs !== null && (
             <li className="flex items-center gap-2 text-muted-foreground">
-              <Mark state="done" />
-              <span>Done in {(state.totalMs / 1000).toFixed(1)}s</span>
+              <MarkIcon state="done" />
+              <span>
+                Done in {seconds(state.totalMs)}
+                {state.timedOut && ' · the search budget ran out before everything finished'}
+              </span>
+            </li>
+          )}
+          {state.phase === 'stopped' && intent && (
+            <li className="flex items-center gap-2 text-muted-foreground">
+              <MarkIcon state="stopped" />
+              <span>Stopped · results so far are kept</span>
             </li>
           )}
         </ol>

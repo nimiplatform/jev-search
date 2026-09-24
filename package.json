@@ -1,23 +1,34 @@
 {
   "name": "jev-search",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
-  "description": "Jev Search by Search1API: search the web across engines, with sources chosen and results ranked by TypeSafe's Jev.",
+  "main": "dist-electron/main.js",
+  "description": "Jev Search by Search1API, adapted as a Nimi desktop App: search the web across engines, with sources chosen and results ranked through Nimi text.decide.",
+  "author": "Jev Search contributors",
   "scripts": {
-    "dev": "vite dev --port 3030",
+    "postinstall": "install-electron --no",
+    "dev": "nimi-app dev --shell electron",
+    "dev:shell": "nimi-app dev",
+    "dev:electron": "nimi-app dev --shell electron",
+    "dev:renderer": "vite --host 127.0.0.1 --port 1531 --strictPort",
+    "init": "nimi-app init --adopt",
+    "sync": "nimi-app sync",
+    "check": "nimi-app check",
     "generate-routes": "tsr generate",
     "build": "vite build && tsc --noEmit",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/build-electron.mjs",
+    "build:electron:production": "node scripts/clean-electron-production.mjs && pnpm run build && pnpm run build:electron && node scripts/package-electron-production.mjs",
+    "app:build": "nimi-app build",
+    "pack": "nimi-app pack",
     "preview": "vite preview --port 3030",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv --env-file .dev.vars.example",
-    "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
-    "deploy": "pnpm run build && wrangler deploy"
+    "typecheck": "tsr generate && tsc --noEmit && tsc -p tsconfig.electron.json",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@nimiplatform/kit": "^0.15.3",
+    "@nimiplatform/sdk": "^0.18.1",
     "@tanstack/react-router": "1.170.18",
-    "@tanstack/react-start": "1.168.28",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.3.0",
@@ -29,24 +40,29 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.45.0",
+    "@electron/packager": "^20.3.0",
+    "@nimiplatform/app-tools": "^0.11.4",
+    "@nimiplatform/nimi-coding": "0.6.3",
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/router-cli": "1.167.19",
-    "@types/node": "22.14.0",
+    "@tanstack/router-plugin": "1.168.20",
+    "@types/node": "^24.13.3",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
+    "electron": "^42.10.1",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.1.13",
     "tw-animate-css": "^1.3.8",
     "typescript": "5.8.3",
     "vite": "8.1.5",
     "vitest": "^3.2.4",
-    "wrangler": "4.111.0"
+    "yaml": "^2.9.0"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=24"
   },
-  "packageManager": "pnpm@10.8.0",
+  "packageManager": "pnpm@10.34.5",
   "license": "MIT",
   "homepage": "https://jev.s1.dev",
   "repository": {

@@ -42,6 +42,23 @@ export class Search1ApiError extends Error {
     this.name = 'Search1ApiError';
     this.status = status;
   }
+  get code(): string {
+    return `SEARCH1API_HTTP_${this.status}`;
+  }
+}
+
+/** No Search1API key is configured, so no engine can be asked. */
+export class Search1ApiNotConfiguredError extends Error {
+  readonly code = 'SEARCH1API_NOT_CONFIGURED';
+  constructor() {
+    super('Search1API key is not configured');
+    this.name = 'Search1ApiNotConfiguredError';
+  }
+}
+
+/** Error bodies travel to the renderer; never let one carry the key back. */
+function redact(text: string, secret: string): string {
+  return secret ? text.split(secret).join('[redacted]') : text;
 }
 
 /**
@@ -77,7 +94,7 @@ export async function search(
     signal: laneSignal,
   });
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
+    const text = redact(await response.text().catch(() => ''), config.apiKey);
     throw new Search1ApiError(response.status, text.slice(0, 300) || response.statusText);
   }
   const body = (await response.json()) as { results?: unknown };

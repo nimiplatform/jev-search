@@ -1,12 +1,17 @@
-import { createRouter } from '@tanstack/react-router';
+import { createRouter, type RouterHistory } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
 
-export function getRouter() {
+/**
+ * Browser history by default. A shell that loads the page from a file URL can
+ * pass `createHashHistory()` instead; routes and search params stay the same.
+ */
+export function getRouter(options: { history?: RouterHistory } = {}) {
   return createRouter({
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true,
+    ...(options.history ? { history: options.history } : {}),
   });
 }
 

@@ -1,12 +1,11 @@
 node_modules
 dist
-.output
-.wrangler
-.dev.vars*
-!.dev.vars.example
+dist-electron/
+dist-electron-package/
+.nimi/local/
+.vite/
 .env
 .env.*
-!.env.example
 *.log
 .DS_Store
 src/routeTree.gen.ts

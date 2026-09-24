@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalUrl, clusterItems, compareItems, titleKey, type RankedItem } from '@/lib/rank';
+import { canonicalUrl, clusterItems, compareItems, relevanceGroup, titleKey, type RankedItem } from '@/lib/rank';
 
 function item(partial: Partial<RankedItem> & { id: string }): RankedItem {
   return {
@@ -53,6 +53,23 @@ describe('clusterItems', () => {
     const fresh = item({ id: 'fresh', relevance: 0.6, ageHours: 2 });
     const unknown = item({ id: 'unknown', relevance: 0.95, ageHours: null });
     expect([old, unknown, fresh].sort((x, y) => compareItems(x, y, 'newest')).map((i) => i.id)).toEqual(['fresh', 'old', 'unknown']);
+  });
+  it('puts rows without a judgment after every judged row, whatever their age', () => {
+    const unjudged = item({ id: 'unjudged', relevance: null, ranked: false, ageHours: 1, unscoredReason: 'Canceled (AbortError)' });
+    const low = item({ id: 'low', relevance: 0.05, ageHours: 500 });
+    const high = item({ id: 'high', relevance: 0.9, ageHours: 200 });
+    for (const mode of ['best', 'newest'] as const) {
+      expect([unjudged, low, high].sort((x, y) => compareItems(x, y, mode)).map((i) => i.id).at(-1)).toBe('unjudged');
+    }
+  });
+});
+
+describe('relevanceGroup', () => {
+  it('separates judged on-topic, judged off-topic and unjudged rows', () => {
+    expect(relevanceGroup(item({ id: 'a', relevance: 0.3 }))).toBe('on-topic');
+    expect(relevanceGroup(item({ id: 'b', relevance: 0.29 }))).toBe('off-topic');
+    expect(relevanceGroup(item({ id: 'c', relevance: 0 }))).toBe('off-topic');
+    expect(relevanceGroup(item({ id: 'd', relevance: null, ranked: false, unscoredReason: 'x' }))).toBe('unscored');
   });
 });
 
