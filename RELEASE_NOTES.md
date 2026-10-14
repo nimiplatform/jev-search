@@ -10,7 +10,7 @@
 
 ## 0.1.0
 
-First Nimi desktop release of Jev Search, adapted from the upstream web app ([superagents-lab/jev-search](https://github.com/superagents-lab/jev-search), upstream `main` at `67027d0`).
+Initial Nimi desktop adaptation of Jev Search, adapted from the upstream web app ([superagents-lab/jev-search](https://github.com/superagents-lab/jev-search), upstream `main` at `67027d0`). This earlier local candidate was not publicly released.
 
 - Runs as a Nimi App on Windows x86-64, in an Electron Host supervised by Nimi Desktop.
 - Reading the request and judging each result's relevance use Nimi `text.decide`. Which model answers, and whether it runs locally or in the cloud, is configured in Nimi.

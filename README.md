@@ -82,6 +82,17 @@ budget extension or automatic retry was added. The development App then closed
 normally. Current-package installation, publication and Catalog admission are
 not established by these development checks.
 
+The Windows production build and pack pass. On the installed Nimi 0.2.5-rc.2
+local candidate, Home read the package and displayed its identity, MIT license,
+capability and safety declaration. Installation was refused because the data
+root already contains a `user_imported` 0.1.1 record, while this Home inventory
+does not expose that old installation's update entry. The old package and data
+were left untouched. This local-import path is not accepted; the separate
+verified Catalog source still requires actual admission/install/business checks.
+The Nimi candidate was needed because updated Realm character fields were
+rejected by the older installed 0.2.5-rc.1 Runtime; 0.2.5-rc.2 starts successfully
+and shows the existing account with Runtime running. It is not a public Nimi release.
+
 The publisher declaration describes a general-audience search App showing
 unmoderated web results. AI decisions are labeled in the footer; no generated
 answers, analytics or public-content publishing are added. Search1API requires
