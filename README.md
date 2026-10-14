@@ -107,8 +107,11 @@ normally. This is a real installed search, not reuse of the development result.
 That installed journey exposed a broken search-header icon: the JSX image used
 `/favicon.png`, which resolves outside the packaged page under `file://`.
 Patch 0.1.2 changes only that image URL to a page-relative path. The immutable
-0.1.1 release remains intact; 0.1.2 publication/admission and the corresponding
-Catalog update/key-retention checks are separate and not yet claimed.
+0.1.1 release remains intact. The protected tag workflow has published 0.1.2;
+[Registry PR 108](https://github.com/nimiplatform/nimi-app-registry/pull/108)
+passed candidate validation and awaits its explicit human admission decision.
+The Catalog update/key-retention checks for that patch remain NOT-VERIFIED;
+the currently admitted Catalog version is still 0.1.1.
 
 The publisher declaration describes a general-audience search App showing
 unmoderated web results. AI decisions are labeled in the footer; no generated
