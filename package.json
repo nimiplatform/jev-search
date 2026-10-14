@@ -26,8 +26,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nimiplatform/kit": "^0.15.3",
-    "@nimiplatform/sdk": "^0.18.1",
+    "@nimiplatform/kit": "^0.18.1",
+    "@nimiplatform/sdk": "^0.21.0",
     "@tanstack/react-router": "1.170.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@electron/packager": "^20.3.0",
     "@nimiplatform/app-tools": "^0.11.4",
-    "@nimiplatform/nimi-coding": "0.6.3",
+    "@nimiplatform/nimi-coding": "0.6.5",
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/router-cli": "1.167.19",
     "@tanstack/router-plugin": "1.168.20",
@@ -50,11 +50,11 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.3",
-    "electron": "^42.10.1",
+    "electron": "^44.5.1",
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.1.13",
     "tw-animate-css": "^1.3.8",
-    "typescript": "5.8.3",
+    "typescript": "6.0.3",
     "vite": "8.1.5",
     "vitest": "^3.2.4",
     "yaml": "^2.9.0"

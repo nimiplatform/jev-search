@@ -15,6 +15,8 @@ import {
 
 /** `invoke` and `listenShell` from `@nimiplatform/kit/shell/renderer/bridge`. */
 export interface ShellBridge {
+  /** Prepares only the technical session before a new explicit operation. */
+  prepareSession(signal?: AbortSignal): Promise<void>;
   invoke(command: string, payload?: unknown): Promise<unknown>;
   /** Resolves to the unsubscribe function once the listener is registered. */
   listen(eventName: string, handler: (event: { payload: unknown }) => void): Promise<() => void>;
@@ -44,6 +46,8 @@ export function createShellSearchTransport(
 
   return {
     async ask(params, onEvent, signal) {
+      if (signal.aborted) return;
+      await bridge.prepareSession(signal);
       if (signal.aborted) return;
       let ended = false;
       let markEnded: () => void = () => undefined;
@@ -87,10 +91,12 @@ export function createShellSearchTransport(
     },
 
     async status() {
+      await bridge.prepareSession();
       return readSettingsStatus(await bridge.invoke(SEARCH_COMMANDS.searchSettingsStatus, {}));
     },
 
     async setKey(apiKey) {
+      await bridge.prepareSession();
       return readSettingsStatus(await bridge.invoke(SEARCH_COMMANDS.setSearch1ApiKey, { apiKey }));
     },
   };

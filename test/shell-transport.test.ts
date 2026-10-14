@@ -27,6 +27,7 @@ function scriptedBridge() {
   const invocations: Array<{ command: string; payload: unknown; resolve: (value?: unknown) => void; reject: (error: unknown) => void }> = [];
   const unsubscribed = vi.fn();
   const bridge: ShellBridge = {
+    prepareSession: vi.fn(async () => undefined),
     invoke: vi.fn(
       (command: string, payload?: unknown) =>
         new Promise<unknown>((resolve, reject) => {
@@ -53,6 +54,33 @@ function scriptedBridge() {
 }
 
 describe('shell transport', () => {
+  it('prepares a new settings read and does not replay a rejected operation', async () => {
+    const shell = scriptedBridge();
+    const failure = new Error('session unavailable');
+    vi.mocked(shell.bridge.prepareSession).mockRejectedValueOnce(failure);
+    const transport = createShellSearchTransport(shell.bridge);
+    await expect(transport.status()).rejects.toBe(failure);
+    expect(shell.invocations).toHaveLength(0);
+    const retry = transport.status();
+    await vi.waitFor(() => expect(shell.invocations).toHaveLength(1));
+    shell.invocations[0]!.resolve({ search1apiConfigured: false });
+    await expect(retry).resolves.toEqual({ search1apiConfigured: false });
+    expect(shell.bridge.prepareSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not start a search canceled while technical preparation is pending', async () => {
+    const shell = scriptedBridge();
+    let ready!: () => void;
+    vi.mocked(shell.bridge.prepareSession).mockImplementation(() => new Promise<void>((resolve) => { ready = resolve; }));
+    const controller = new AbortController();
+    const task = createShellSearchTransport(shell.bridge).ask({ taskId: 'pending', q: 'Bun' }, () => undefined, controller.signal);
+    controller.abort();
+    ready();
+    await task;
+    expect(shell.invocations).toHaveLength(0);
+    expect(shell.listeners.size).toBe(0);
+  });
+
   it('delivers only its own task events in order and ends with the terminal one', async () => {
     const shell = scriptedBridge();
     const transport = createShellSearchTransport(shell.bridge);
@@ -139,6 +167,7 @@ describe('shell transport', () => {
 
   it('reads the settings status strictly and never sends the key back', async () => {
     const bridge: ShellBridge = {
+      prepareSession: vi.fn(async () => undefined),
       invoke: vi.fn(async (command: string) =>
         command === SEARCH_COMMANDS.searchSettingsStatus ? { search1apiConfigured: false } : { search1apiConfigured: true }
       ),
@@ -151,7 +180,7 @@ describe('shell transport', () => {
     expect(bridge.invoke).toHaveBeenCalledWith(SEARCH_COMMANDS.setSearch1ApiKey, { apiKey: 's1-key' });
 
     for (const answer of [null, {}, { search1apiConfigured: 'yes' }, { search1apiConfigured: true, apiKey: 's1-key' }]) {
-      const strict = createShellSearchTransport({ invoke: async () => answer, listen: vi.fn() });
+      const strict = createShellSearchTransport({ prepareSession: async () => undefined, invoke: async () => answer, listen: vi.fn() });
       await expect(strict.status()).rejects.toBeInstanceOf(ShellTransportError);
     }
   });
@@ -170,6 +199,7 @@ function inProcessIpc(handlers: ReturnType<typeof createSearchCommandHandlers>) 
     listeners.get(eventName)?.forEach((listener) => listener({ payload: copy }));
   };
   const bridge: ShellBridge = {
+    prepareSession: async () => undefined,
     async invoke(command, payload = {}) {
       const handler = handlers[command as keyof typeof handlers];
       if (!handler) throw Object.assign(new Error(`Unsupported command: ${command}`), { reasonCode: 'unsupported-electron-shell-command' });
