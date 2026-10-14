@@ -19,3 +19,27 @@ local_development:
   electron:
     renderer_origin: http://127.0.0.1:1531
     host_source_directory: src-electron
+safety_profile:
+  intended_audience: general
+  content_descriptors:
+    - unmoderated-shared-content
+  ai:
+    direct_interaction: true
+    interaction_notice: present
+    risk_features: []
+    subject_notice: not-applicable
+    outputs:
+      - modality: text
+        exposure: in-app-only
+        publication_control: not-applicable
+        in_product_notice: present
+        export_visible_marking: not-applicable
+        machine_readable_marking: absent
+  data_practices:
+    publisher_direct_external_network: true
+    telemetry: []
+    third_party_account: required
+    user_content_sharing: none
+    commercial_features: []
+    sensitive_data_categories: []
+  high_impact_decision_uses: []

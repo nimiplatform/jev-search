@@ -2,6 +2,8 @@
 
 ## 0.1.1
 
+- Uses published Nimi SDK/Kit 0.21.0 and App Tools 0.13.1 with Electron 44 on Windows x86-64.
+- New searches and settings operations prepare the protected session; cancellation during preparation does not start a search or replay an earlier operation.
 - An explicit time window no longer triggers an extra speculative Google search that could not be reused.
 - If the speculative Google search fails, the Google result shows that failure instead of paying for the same
   search again past its 15-second limit.
