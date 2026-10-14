@@ -1,6 +1,6 @@
 app_id: io.github.nimiplatform.jev-search
 display_name: Jev Search
-version: 0.1.1
+version: 0.1.2
 profile: standalone
 npm_package_name: jev-search
 cargo_package_name: jev-search-shell

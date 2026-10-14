@@ -8,7 +8,7 @@ export function Logo({ className }: { className?: string }) {
       aria-hidden
       className={cn('shrink-0 object-contain', className)}
       height={400}
-      src="/favicon.png"
+      src="./favicon.png"
       width={400}
     />
   );

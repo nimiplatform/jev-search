@@ -1,5 +1,9 @@
 # Release notes
 
+## 0.1.2
+
+- Fixes the search-header icon in installed Windows packages by resolving it beside the packaged page instead of at the filesystem root. Search behavior and saved credentials are unchanged.
+
 ## 0.1.1
 
 - Uses published Nimi SDK/Kit 0.21.0 and App Tools 0.13.1 with Electron 44 on Windows x86-64.

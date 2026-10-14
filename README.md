@@ -88,10 +88,27 @@ capability and safety declaration. Installation was refused because the data
 root already contains a `user_imported` 0.1.1 record, while this Home inventory
 does not expose that old installation's update entry. The old package and data
 were left untouched. This local-import path is not accepted; the separate
-verified Catalog source still requires actual admission/install/business checks.
+verified Catalog source subsequently passed as recorded below.
 The Nimi candidate was needed because updated Realm character fields were
 rejected by the older installed 0.2.5-rc.1 Runtime; 0.2.5-rc.2 starts successfully
 and shows the existing account with Runtime running. It is not a public Nimi release.
+
+[0.1.1](https://github.com/nimiplatform/jev-search/releases/tag/v0.1.1) was published
+by the protected tag workflow. Registry preparation verified the exact source
+license, release digest and build provenance; [PR 107](https://github.com/nimiplatform/nimi-app-registry/pull/107)
+passed candidate/finalization checks and merged after explicit human approval
+for Windows x86_64 / stable with the recorded limits. Home downloaded and
+installed the actual Catalog package and launched its managed executable. The
+user saved the Search1API key through the installed settings UI. A new search
+for the same Rust topic returned 23 results from Google, DuckDuckGo and Yandex;
+the model marked 18 relevant and the UI reported 19.5 seconds. The App closed
+normally. This is a real installed search, not reuse of the development result.
+
+That installed journey exposed a broken search-header icon: the JSX image used
+`/favicon.png`, which resolves outside the packaged page under `file://`.
+Patch 0.1.2 changes only that image URL to a page-relative path. The immutable
+0.1.1 release remains intact; 0.1.2 publication/admission and the corresponding
+Catalog update/key-retention checks are separate and not yet claimed.
 
 The publisher declaration describes a general-audience search App showing
 unmoderated web results. AI decisions are labeled in the footer; no generated
