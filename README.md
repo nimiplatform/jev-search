@@ -109,9 +109,14 @@ That installed journey exposed a broken search-header icon: the JSX image used
 Patch 0.1.2 changes only that image URL to a page-relative path. The immutable
 0.1.1 release remains intact. The protected tag workflow has published 0.1.2;
 [Registry PR 108](https://github.com/nimiplatform/nimi-app-registry/pull/108)
-passed candidate validation and awaits its explicit human admission decision.
-The Catalog update/key-retention checks for that patch remain NOT-VERIFIED;
-the currently admitted Catalog version is still 0.1.1.
+passed candidate and finalization checks and merged after explicit human approval
+for Windows x86_64 / stable. Home downloaded and updated the verified Catalog
+installation from 0.1.1 to 0.1.2 while retaining App data. The installed patch
+launched normally and displayed the corrected header Logo. Without re-entering
+the saved Search1API key, a real search for the same Rust topic returned 21
+results, with 17 marked relevant by the model, in 5.6 seconds. Normal exit
+completed. macOS and uninstall are NOT-VERIFIED; the earlier local-import
+limitation and model-quality/cold-start limits remain unchanged.
 
 The publisher declaration describes a general-audience search App showing
 unmoderated web results. AI decisions are labeled in the footer; no generated
