@@ -13,7 +13,6 @@ storage_policy:
 metadata:
   summary: "Search the web in plain language. Jev Search picks sources, time ranges and search terms, then ranks the links Search1API returns, with no generated answers. AI judgments use Nimi text.decide as configured in Nimi; web search needs your own Search1API key."
   icon: public/icon-512.png
-  readme: README.md
   release_notes: RELEASE_NOTES.md
 local_development:
   electron:
